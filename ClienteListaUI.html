@@ -1,0 +1,258 @@
+<!--
+  ARCHIVO: ClienteListaUI.html
+
+  Interfaz de la lista de clientes.
+
+  Responsabilidad:
+  - Cargar clientes desde el backend.
+  - Mostrar clientes.
+  - Filtrar por nombre o celular.
+  - Abrir la ficha de un cliente.
+  - Mostrar estados de carga y lista vacía.
+
+  No debe contener:
+  - lógica de Google Sheets.
+  - lógica de negocio.
+  - formulario de cliente.
+  - ficha de cliente.
+  - lógica de eventos.
+  - sistema de navegación.
+  - CSS global.
+-->
+
+<script>
+
+  const ClienteListaUI = {
+
+    clientes: [],
+
+    clientesFiltrados: [],
+
+
+    cargar() {
+
+      this.mostrarCargando();
+
+      google.script.run
+        .withSuccessHandler(
+          this._cargaExitosa.bind(this)
+        )
+        .withFailureHandler(
+          this._cargaFallida.bind(this)
+        )
+        .apiObtenerClientes();
+    },
+
+
+    _cargaExitosa(clientes) {
+
+      this.clientes = Array.isArray(clientes)
+        ? clientes.slice(0, 5)
+        : [];
+
+      this.clientesFiltrados =
+        [...this.clientes];
+
+      this.mostrar(
+        this.clientesFiltrados
+      );
+    },
+
+
+    _cargaFallida(error) {
+
+      const contenedor =
+        this._obtenerContenedor();
+
+      if (!contenedor) {
+        return;
+      }
+
+      const mensaje =
+        error && error.message
+          ? error.message
+          : 'No fue posible cargar los clientes.';
+
+      contenedor.innerHTML = `
+        <div class="mensaje mensaje-error">
+          ${FrontendUtils.escaparHtml(mensaje)}
+        </div>
+      `;
+    },
+
+
+    mostrar(clientes) {
+
+      const contenedor =
+        this._obtenerContenedor();
+
+      if (!contenedor) {
+        return;
+      }
+
+      if (!clientes.length) {
+
+        contenedor.innerHTML = `
+          <div class="estado-vacio">
+            No hay clientes para mostrar.
+          </div>
+        `;
+
+        return;
+      }
+
+      contenedor.innerHTML = clientes
+        .map(cliente => this._crearTarjeta(cliente))
+        .join('');
+    },
+
+
+    _crearTarjeta(cliente) {
+
+      const idCliente =
+        FrontendUtils.escaparHtml(
+          cliente.idCliente
+        );
+
+      const nombre =
+        FrontendUtils.escaparHtml(
+          cliente.nombreCompleto
+        );
+
+      const celular =
+        FrontendUtils.escaparHtml(
+          cliente.celular
+        );
+
+      const vehiculo =
+        FrontendUtils.escaparHtml(
+          cliente.primerVehiculoInteres
+        );
+
+      return `
+        <article
+          class="card cliente-card"
+          data-id-cliente="${idCliente}"
+          onclick="ClienteListaUI.abrirCliente('${idCliente}')"
+        >
+
+          <h3 class="cliente-card-nombre">
+            ${nombre}
+          </h3>
+
+          <p class="cliente-card-info">
+            ${celular}
+          </p>
+
+          <p class="cliente-card-info">
+            ${vehiculo}
+          </p>
+
+        </article>
+      `;
+    },
+
+
+    filtrar() {
+
+      const input =
+        document.getElementById(
+          'buscar-clientes'
+        );
+
+      if (!input) {
+        return;
+      }
+
+      const termino =
+        input.value.trim();
+
+      /*
+       * Si no hay búsqueda, mostramos nuevamente
+       * los 5 clientes cargados inicialmente.
+       */
+      if (!termino) {
+
+        this.clientesFiltrados =
+          [...this.clientes];
+
+        this.mostrar(
+          this.clientesFiltrados
+        );
+
+        return;
+      }
+
+      /*
+       * La búsqueda se realiza en todo Sheets.
+       *
+       * Esto permite encontrar clientes que todavía
+       * no forman parte de los 5 registros iniciales.
+       */
+      this.mostrarCargando();
+
+      google.script.run
+        .withSuccessHandler(
+          this._busquedaExitosa.bind(this)
+        )
+        .withFailureHandler(
+          this._cargaFallida.bind(this)
+        )
+        .apiBuscarClientes(
+          termino
+        );
+    },
+
+
+    _busquedaExitosa(clientes) {
+
+      this.clientesFiltrados =
+        Array.isArray(clientes)
+          ? clientes
+          : [];
+
+      this.mostrar(
+        this.clientesFiltrados
+      );
+    },
+
+
+    abrirCliente(idCliente) {
+
+      if (!idCliente) {
+        return;
+      }
+
+      ClienteFichaUI.cargar(
+        idCliente
+      );
+    },
+
+
+    mostrarCargando() {
+
+      const contenedor =
+        this._obtenerContenedor();
+
+      if (!contenedor) {
+        return;
+      }
+
+      contenedor.innerHTML = `
+        <div class="loading">
+          Cargando clientes...
+        </div>
+      `;
+    },
+
+
+    _obtenerContenedor() {
+
+      return document.getElementById(
+        'lista-clientes'
+      );
+    }
+
+  };
+
+</script>

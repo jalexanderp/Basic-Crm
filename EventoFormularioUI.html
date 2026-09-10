@@ -1,0 +1,953 @@
+<!--
+  ARCHIVO: EventoFormularioUI.html
+
+  Responsabilidad:
+  - Mostrar formulario de evento.
+  - Validar datos en frontend.
+  - Mostrar/ocultar campos de seguimiento.
+  - Crear eventos mediante API.
+  - Volver a la ficha del cliente.
+
+  Importante:
+  - Un evento CRM NO implica necesariamente una cita.
+  - Solo cuando requiereSeguimiento = "Sí" se solicita
+    una fecha y hora para la interacción posterior.
+  - La creación del evento de Google Calendar se realiza
+    exclusivamente en el backend.
+  - Este archivo no contiene lógica de Google Calendar.
+
+  No contiene:
+  - acceso directo a Google Sheets.
+  - generación de IDs.
+  - lógica de negocio.
+  - integración con Google Calendar.
+-->
+
+<script>
+
+  const EventoFormularioUI = {
+
+    idCliente: null,
+
+    guardando: false,
+
+
+    /**
+     * Abre el formulario para un cliente.
+     *
+     * @param {string} idCliente
+     */
+    mostrar(idCliente) {
+
+      if (!idCliente) {
+        return;
+      }
+
+      this.idCliente = idCliente;
+      this.guardando = false;
+
+      const vista =
+        NavegacionUI.obtenerElemento(
+          'nuevoEvento'
+        );
+
+      if (!vista) {
+        return;
+      }
+
+      vista.innerHTML =
+        this._crearFormulario();
+
+      NavegacionUI.mostrar(
+        'nuevoEvento'
+      );
+
+      this._configurarSeguimiento();
+    },
+
+
+    /**
+     * Genera el formulario.
+     *
+     * @returns {string}
+     */
+    _crearFormulario() {
+
+      return `
+
+        <div class="card">
+
+          <div
+            style="
+              display:flex;
+              align-items:center;
+              gap:12px;
+              margin-bottom:20px;
+              flex-wrap:wrap;
+            "
+          >
+
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="EventoFormularioUI.cancelar()"
+            >
+              ← Volver
+            </button>
+
+            <h2 style="margin:0;">
+              Registrar evento
+            </h2>
+
+          </div>
+
+
+          <form
+            id="formulario-evento"
+            novalidate
+            onsubmit="EventoFormularioUI.guardar(event)"
+          >
+
+
+            <!--
+              TIPO DE EVENTO
+            -->
+
+            <div class="form-group">
+
+              <label
+                class="form-label"
+                for="evento-tipo"
+              >
+                Tipo de evento
+                <span class="form-required">*</span>
+              </label>
+
+              <select
+                id="evento-tipo"
+                name="tipoEvento"
+                required
+              >
+
+                <option value="">
+                  Seleccionar
+                </option>
+
+                <option value="Llamada">
+                  Llamada
+                </option>
+
+                <option value="Prueba de manejo">
+                  Prueba de manejo
+                </option>
+
+                <option value="Peritaje">
+                  Peritaje
+                </option>
+
+                <option value="Otro">
+                  Otro
+                </option>
+
+              </select>
+
+              <div
+                id="error-evento-tipo"
+                class="field-error"
+                hidden
+              ></div>
+
+            </div>
+
+
+            <!--
+              COMENTARIO
+            -->
+
+            <div class="form-group">
+
+              <label
+                class="form-label"
+                for="evento-comentario"
+              >
+                Comentario
+                <span class="form-required">*</span>
+              </label>
+
+              <textarea
+                id="evento-comentario"
+                name="comentario"
+                rows="4"
+                required
+              ></textarea>
+
+              <div
+                id="error-evento-comentario"
+                class="field-error"
+                hidden
+              ></div>
+
+            </div>
+
+
+            <!--
+              RESULTADO DEL EVENTO
+
+              El resultado pertenece al evento realizado.
+            -->
+
+            <div class="form-group">
+
+              <label
+                class="form-label"
+                for="evento-resultado"
+              >
+                Resultado del evento
+                <span class="form-required">*</span>
+              </label>
+
+              <select
+                id="evento-resultado"
+                name="resultadoEvento"
+                required
+              >
+
+                <option value="">
+                  Seleccionar
+                </option>
+
+                <option value="Cierre de venta">
+                  Cierre de venta
+                </option>
+
+                <option value="Continúa negociando">
+                  Continúa negociando
+                </option>
+
+                <option value="Desiste del negocio">
+                  Desiste del negocio
+                </option>
+
+              </select>
+
+              <div
+                id="error-evento-resultado"
+                class="field-error"
+                hidden
+              ></div>
+
+            </div>
+
+
+            <!--
+              SEGUIMIENTO
+
+              Importante:
+              "Sí" significa que el evento genera
+              una interacción posterior que debe
+              ser agendada.
+            -->
+
+            <div class="form-group">
+
+              <label
+                class="form-label"
+                for="evento-seguimiento"
+              >
+                ¿Requiere seguimiento?
+                <span class="form-required">*</span>
+              </label>
+
+              <select
+                id="evento-seguimiento"
+                name="requiereSeguimiento"
+                required
+                onchange="EventoFormularioUI._configurarSeguimiento()"
+              >
+
+                <option value="">
+                  Seleccionar
+                </option>
+
+                <option value="No">
+                  No
+                </option>
+
+                <option value="Sí">
+                  Sí
+                </option>
+
+              </select>
+
+              <div
+                id="error-evento-seguimiento"
+                class="field-error"
+                hidden
+              ></div>
+
+            </div>
+
+
+            <!--
+              SEGUIMIENTO / CITA
+
+              Estos campos solamente aparecen
+              cuando existe una interacción posterior
+              que debe ser agendada.
+            -->
+
+            <div
+              id="campos-seguimiento"
+              hidden
+            >
+
+              <div
+                style="
+                  margin-bottom:16px;
+                  padding:12px;
+                  border-radius:6px;
+                  background:#f5f7fa;
+                "
+              >
+
+                <strong>
+                  Agendar seguimiento
+                </strong>
+
+                <div
+                  style="
+                    margin-top:5px;
+                    color:#666;
+                  "
+                >
+                  Se creará una cita de 1 hora en el
+                  calendario "Trabajo".
+                </div>
+
+              </div>
+
+
+              <!--
+                FECHA
+              -->
+
+              <div class="form-group">
+
+                <label
+                  class="form-label"
+                  for="evento-fecha"
+                >
+                  Fecha del seguimiento
+                  <span class="form-required">*</span>
+                </label>
+
+                <input
+                  type="date"
+                  id="evento-fecha"
+                  name="fechaEvento"
+                >
+
+                <div
+                  id="error-evento-fecha"
+                  class="field-error"
+                  hidden
+                ></div>
+
+              </div>
+
+
+              <!--
+                HORA
+              -->
+
+              <div class="form-group">
+
+                <label
+                  class="form-label"
+                  for="evento-hora"
+                >
+                  Hora del seguimiento
+                  <span class="form-required">*</span>
+                </label>
+
+                <input
+                  type="time"
+                  id="evento-hora"
+                  name="horaEvento"
+                >
+
+                <div
+                  id="error-evento-hora"
+                  class="field-error"
+                  hidden
+                ></div>
+
+              </div>
+
+
+              <!--
+                MOTIVO
+              -->
+
+              <div class="form-group">
+
+                <label
+                  class="form-label"
+                  for="evento-motivo"
+                >
+                  Motivo del seguimiento
+                </label>
+
+                <textarea
+                  id="evento-motivo"
+                  name="motivoSeguimiento"
+                  rows="3"
+                ></textarea>
+
+              </div>
+
+            </div>
+
+
+            <!--
+              MENSAJE GENERAL
+            -->
+
+            <div
+              id="evento-formulario-mensaje"
+              hidden
+            ></div>
+
+
+            <!--
+              BOTONES
+            -->
+
+            <div
+              style="
+                display:flex;
+                gap:10px;
+                flex-wrap:wrap;
+              "
+            >
+
+              <button
+                type="button"
+                class="btn btn-secondary"
+                onclick="EventoFormularioUI.cancelar()"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="submit"
+                id="evento-btn-guardar"
+                class="btn btn-primary"
+              >
+                Guardar evento
+              </button>
+
+            </div>
+
+          </form>
+
+        </div>
+      `;
+    },
+
+
+    /**
+     * Configura la visibilidad de los campos
+     * relacionados con seguimiento.
+     */
+    _configurarSeguimiento() {
+
+      const select =
+        document.getElementById(
+          'evento-seguimiento'
+        );
+
+      const contenedor =
+        document.getElementById(
+          'campos-seguimiento'
+        );
+
+      const fecha =
+        document.getElementById(
+          'evento-fecha'
+        );
+
+      const hora =
+        document.getElementById(
+          'evento-hora'
+        );
+
+      if (!select || !contenedor) {
+        return;
+      }
+
+      const requiere =
+        select.value === 'Sí';
+
+      contenedor.hidden =
+        !requiere;
+
+      if (fecha) {
+        fecha.required =
+          requiere;
+
+        if (!requiere) {
+          fecha.value = '';
+        }
+      }
+
+      if (hora) {
+        hora.required =
+          requiere;
+
+        if (!requiere) {
+          hora.value = '';
+        }
+      }
+    },
+
+
+    /**
+     * Guarda el evento.
+     *
+     * El frontend únicamente envía los datos.
+     *
+     * La lógica de:
+     * - creación del evento CRM
+     * - validación de disponibilidad
+     * - holgura de 1 hora
+     * - calendario "Trabajo"
+     * - recordatorio
+     *
+     * pertenece al backend.
+     *
+     * @param {Event} evento
+     */
+    guardar(evento) {
+
+      evento.preventDefault();
+
+      if (this.guardando) {
+        return;
+      }
+
+      this._limpiarErrores();
+
+      const datos =
+        this._obtenerDatos();
+
+      if (!this._validar(datos)) {
+        return;
+      }
+
+      this.guardando = true;
+
+      const boton =
+        document.getElementById(
+          'evento-btn-guardar'
+        );
+
+      if (boton) {
+
+        boton.disabled = true;
+
+        boton.textContent =
+          'Guardando...';
+      }
+
+      google.script.run
+        .withSuccessHandler(
+          this._guardadoExitoso.bind(this)
+        )
+        .withFailureHandler(
+          this._guardadoFallido.bind(this)
+        )
+        .apiCrearEvento(datos);
+    },
+
+
+    /**
+     * Obtiene los datos del formulario.
+     *
+     * @returns {Object}
+     */
+    _obtenerDatos() {
+
+      const requiereSeguimiento =
+        this._valor(
+          'evento-seguimiento'
+        );
+
+      return {
+
+        idCliente:
+          this.idCliente,
+
+        tipoEvento:
+          this._valor(
+            'evento-tipo'
+          ),
+
+        comentario:
+          this._valor(
+            'evento-comentario'
+          ),
+
+        requiereSeguimiento:
+          requiereSeguimiento,
+
+        fechaEvento:
+          requiereSeguimiento === 'Sí'
+            ? this._valor(
+                'evento-fecha'
+              )
+            : '',
+
+        horaEvento:
+          requiereSeguimiento === 'Sí'
+            ? this._valor(
+                'evento-hora'
+              )
+            : '',
+
+        /*
+         * El backend determina la fecha real
+         * del recordatorio a partir de la
+         * configuración existente.
+         */
+        fechaNotificacion:
+          '',
+
+        resultadoEvento:
+          this._valor(
+            'evento-resultado'
+          ),
+
+        motivoSeguimiento:
+          requiereSeguimiento === 'Sí'
+            ? this._valor(
+                'evento-motivo'
+              )
+            : ''
+      };
+    },
+
+
+    /**
+     * Valida los datos del formulario.
+     *
+     * @param {Object} datos
+     * @returns {boolean}
+     */
+    _validar(datos) {
+
+      let valido = true;
+
+
+      /*
+       * Tipo de evento
+       */
+
+      if (!datos.tipoEvento) {
+
+        this._error(
+          'error-evento-tipo',
+          'El tipo de evento es obligatorio.'
+        );
+
+        valido = false;
+      }
+
+
+      /*
+       * Comentario
+       */
+
+      if (!datos.comentario) {
+
+        this._error(
+          'error-evento-comentario',
+          'El comentario es obligatorio.'
+        );
+
+        valido = false;
+      }
+
+
+      /*
+       * Resultado
+       */
+
+      if (!datos.resultadoEvento) {
+
+        this._error(
+          'error-evento-resultado',
+          'El resultado del evento es obligatorio.'
+        );
+
+        valido = false;
+      }
+
+
+      /*
+       * Seguimiento
+       */
+
+      if (!datos.requiereSeguimiento) {
+
+        this._error(
+          'error-evento-seguimiento',
+          'Debes indicar si requiere seguimiento.'
+        );
+
+        valido = false;
+      }
+
+
+      /*
+       * Fecha del seguimiento
+       */
+
+      if (
+        datos.requiereSeguimiento === 'Sí' &&
+        !datos.fechaEvento
+      ) {
+
+        this._error(
+          'error-evento-fecha',
+          'La fecha del seguimiento es obligatoria.'
+        );
+
+        valido = false;
+      }
+
+
+      /*
+       * Hora del seguimiento
+       */
+
+      if (
+        datos.requiereSeguimiento === 'Sí' &&
+        !datos.horaEvento
+      ) {
+
+        this._error(
+          'error-evento-hora',
+          'La hora del seguimiento es obligatoria.'
+        );
+
+        valido = false;
+      }
+
+
+      return valido;
+    },
+
+
+    /**
+     * Gestiona creación exitosa.
+     *
+     * @param {Object} evento
+     */
+    _guardadoExitoso(evento) {
+
+      this.guardando = false;
+
+      if (!evento) {
+
+        this._restaurarBoton();
+
+        this._mostrarMensaje(
+          'El evento se registró correctamente.',
+          'success'
+        );
+
+        return;
+      }
+
+      /*
+       * El backend puede devolver información
+       * adicional sobre el evento de Calendar.
+       *
+       * No dependemos de ella para navegar.
+       */
+
+      ClienteFichaUI.cargar(
+        this.idCliente
+      );
+    },
+
+
+    /**
+     * Gestiona un error.
+     *
+     * @param {Error} error
+     */
+    _guardadoFallido(error) {
+
+      this.guardando = false;
+
+      this._restaurarBoton();
+
+      const mensaje =
+        error && error.message
+          ? error.message
+          : 'No fue posible guardar el evento.';
+
+      this._mostrarMensaje(
+        mensaje,
+        'error'
+      );
+    },
+
+
+    /**
+     * Cancela el formulario.
+     */
+    cancelar() {
+
+      if (this.guardando) {
+        return;
+      }
+
+      ClienteFichaUI.cargar(
+        this.idCliente
+      );
+    },
+
+
+    /**
+     * Limpia errores del formulario.
+     */
+    _limpiarErrores() {
+
+      document
+        .querySelectorAll(
+          '#formulario-evento .field-error'
+        )
+        .forEach(elemento => {
+
+          elemento.textContent =
+            '';
+
+          elemento.hidden =
+            true;
+        });
+
+      const mensaje =
+        document.getElementById(
+          'evento-formulario-mensaje'
+        );
+
+      if (mensaje) {
+
+        mensaje.textContent =
+          '';
+
+        mensaje.hidden =
+          true;
+      }
+    },
+
+
+    /**
+     * Muestra un error debajo de un campo.
+     *
+     * @param {string} id
+     * @param {string} mensaje
+     */
+    _error(id, mensaje) {
+
+      const elemento =
+        document.getElementById(id);
+
+      if (!elemento) {
+        return;
+      }
+
+      elemento.textContent =
+        mensaje;
+
+      elemento.hidden =
+        false;
+    },
+
+
+    /**
+     * Muestra un mensaje general.
+     *
+     * @param {string} mensaje
+     * @param {string} tipo
+     */
+    _mostrarMensaje(
+      mensaje,
+      tipo
+    ) {
+
+      const elemento =
+        document.getElementById(
+          'evento-formulario-mensaje'
+        );
+
+      if (!elemento) {
+        return;
+      }
+
+      elemento.className =
+        tipo === 'error'
+          ? 'mensaje mensaje-error'
+          : 'mensaje mensaje-success';
+
+      elemento.textContent =
+        mensaje;
+
+      elemento.hidden =
+        false;
+    },
+
+
+    /**
+     * Restaura el botón de guardar.
+     */
+    _restaurarBoton() {
+
+      const boton =
+        document.getElementById(
+          'evento-btn-guardar'
+        );
+
+      if (!boton) {
+        return;
+      }
+
+      boton.disabled = false;
+
+      boton.textContent =
+        'Guardar evento';
+    },
+
+
+    /**
+     * Obtiene el valor de un campo.
+     *
+     * @param {string} id
+     * @returns {string}
+     */
+    _valor(id) {
+
+      const elemento =
+        document.getElementById(id);
+
+      return elemento
+        ? elemento.value.trim()
+        : '';
+    }
+
+  };
+
+</script>

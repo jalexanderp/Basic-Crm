@@ -1,0 +1,482 @@
+<!--
+  ARCHIVO: ClienteFichaUI.html
+
+  Ficha individual de cliente.
+
+  Responsabilidad:
+  - Cargar un cliente por ID.
+  - Mostrar sus datos.
+  - Proporcionar acciones de contacto.
+  - Permitir editar el cliente.
+  - Servir como punto de entrada para registrar eventos.
+
+  No debe contener:
+  - acceso directo a Google Sheets.
+  - lógica de negocio.
+  - generación de IDs.
+  - lógica de lista de clientes.
+  - lógica propia de eventos.
+-->
+
+<script>
+
+  const ClienteFichaUI = {
+
+    cliente: null,
+
+    /**
+     * Carga un cliente por su ID.
+     *
+     * @param {string} idCliente
+     */
+    cargar(idCliente) {
+
+      if (!idCliente) {
+        return;
+      }
+
+      NavegacionUI.mostrar(
+        'ficha'
+      );
+
+      const vista =
+        NavegacionUI.obtenerElemento(
+          'ficha'
+        );
+
+      if (!vista) {
+        return;
+      }
+
+      vista.innerHTML = `
+        <div class="loading">
+          Cargando ficha...
+        </div>
+      `;
+
+      google.script.run
+        .withSuccessHandler(
+          this._cargaExitosa.bind(this)
+        )
+        .withFailureHandler(
+          this._cargaFallida.bind(this)
+        )
+        .apiObtenerCliente(idCliente);
+    },
+
+    /**
+     * Gestiona la respuesta del backend.
+     *
+     * @param {Object|null} cliente
+     */
+    _cargaExitosa(cliente) {
+
+      if (!cliente) {
+
+        this.cliente = null;
+
+        const vista =
+          NavegacionUI.obtenerElemento(
+            'ficha'
+          );
+
+        if (vista) {
+
+          vista.innerHTML = `
+            <div class="mensaje mensaje-error">
+              No se encontró el cliente.
+            </div>
+
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="NavegacionUI.mostrar('clientes')"
+            >
+              ← Volver
+            </button>
+          `;
+        }
+
+        return;
+      }
+
+      this.cliente =
+        cliente;
+
+      this.mostrar(
+        cliente
+      );
+    },
+
+    /**
+     * Gestiona un error de carga.
+     *
+     * @param {Error} error
+     */
+    _cargaFallida(error) {
+
+      const vista =
+        NavegacionUI.obtenerElemento(
+          'ficha'
+        );
+
+      if (!vista) {
+        return;
+      }
+
+      const mensaje =
+        error && error.message
+          ? error.message
+          : 'No fue posible cargar el cliente.';
+
+      vista.innerHTML = `
+        <div class="mensaje mensaje-error">
+          ${FrontendUtils.escaparHtml(mensaje)}
+        </div>
+
+        <button
+          type="button"
+          class="btn btn-secondary"
+          onclick="NavegacionUI.mostrar('clientes')"
+        >
+          ← Volver
+        </button>
+      `;
+    },
+
+    /**
+     * Muestra la ficha del cliente.
+     *
+     * @param {Object} cliente
+     */
+    mostrar(cliente) {
+
+      const vista =
+        NavegacionUI.obtenerElemento(
+          'ficha'
+        );
+
+      if (!vista) {
+        return;
+      }
+
+      this.cliente =
+        cliente;
+
+      const id =
+        FrontendUtils.escaparHtml(
+          cliente.idCliente || ''
+        );
+
+      const nombre =
+        FrontendUtils.textoOGrion(
+          FrontendUtils.escaparHtml(
+            cliente.nombreCompleto || ''
+          )
+        );
+
+      const tipo =
+        FrontendUtils.textoOGrion(
+          FrontendUtils.escaparHtml(
+            cliente.tipoCliente || ''
+          )
+        );
+
+      const celular =
+        FrontendUtils.escaparHtml(
+          cliente.celular || ''
+        );
+
+      const email =
+        FrontendUtils.escaparHtml(
+          cliente.email || ''
+        );
+
+      const fechaNacimiento =
+        FrontendUtils.textoOGrion(
+          FrontendUtils.escaparHtml(
+            cliente.fechaNacimiento || ''
+          )
+        );
+
+      const vehiculo1 =
+        FrontendUtils.textoOGrion(
+          FrontendUtils.escaparHtml(
+            cliente.primerVehiculoInteres || ''
+          )
+        );
+
+      const vehiculo2 =
+        FrontendUtils.textoOGrion(
+          FrontendUtils.escaparHtml(
+            cliente.segundoVehiculoInteres || ''
+          )
+        );
+
+      const retoma1 =
+        FrontendUtils.textoOGrion(
+          FrontendUtils.escaparHtml(
+            cliente.primerVehiculoRetoma || ''
+          )
+        );
+
+      const retoma2 =
+        FrontendUtils.textoOGrion(
+          FrontendUtils.escaparHtml(
+            cliente.segundoVehiculoRetoma || ''
+          )
+        );
+
+      const info =
+        FrontendUtils.textoOGrion(
+          FrontendUtils.escaparHtml(
+            cliente.infoAdicional || ''
+          )
+        );
+
+      const telefonoUrl =
+        encodeURIComponent(
+          String(
+            cliente.celular || ''
+          )
+        );
+
+      const emailUrl =
+        encodeURIComponent(
+          String(
+            cliente.email || ''
+          )
+        );
+
+      vista.innerHTML = `
+
+        <div class="card">
+
+          <div
+            style="
+              display:flex;
+              align-items:center;
+              gap:12px;
+              margin-bottom:20px;
+              flex-wrap:wrap;
+            "
+          >
+
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="ClienteFichaUI.volver()"
+            >
+              ← Volver
+            </button>
+
+            <h2 style="margin:0;">
+              Ficha del cliente
+            </h2>
+
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="ClienteFichaUI.editar()"
+            >
+              Editar
+            </button>
+
+          </div>
+
+          <h3>
+            ${nombre}
+          </h3>
+
+          <p class="cliente-card-info">
+            ID: ${id}
+          </p>
+
+          <p class="cliente-card-info">
+            Tipo: ${tipo}
+          </p>
+
+          <hr>
+
+          <h3>
+            Contacto
+          </h3>
+
+          <p>
+            <strong>Celular:</strong>
+            ${FrontendUtils.textoOGrion(celular)}
+          </p>
+
+          <p>
+            <strong>Email:</strong>
+            ${FrontendUtils.textoOGrion(email)}
+          </p>
+
+          <div
+            style="
+              display:flex;
+              gap:8px;
+              flex-wrap:wrap;
+              margin-bottom:20px;
+            "
+          >
+
+            <a
+              class="btn btn-primary"
+              href="tel:${telefonoUrl}"
+            >
+              Llamar
+            </a>
+
+            <a
+              class="btn btn-primary"
+              href="https://wa.me/${telefonoUrl}"
+              target="_blank"
+              rel="noopener"
+            >
+              WhatsApp
+            </a>
+
+            ${
+              cliente.email
+                ? `
+                  <a
+                    class="btn btn-secondary"
+                    href="mailto:${emailUrl}"
+                  >
+                    Correo
+                  </a>
+                `
+                : ''
+            }
+
+          </div>
+
+          <h3>
+            Información personal
+          </h3>
+
+          <p>
+            <strong>Fecha de nacimiento:</strong>
+            ${fechaNacimiento}
+          </p>
+
+          <h3>
+            Vehículos de interés
+          </h3>
+
+          <p>
+            <strong>Primero:</strong>
+            ${vehiculo1}
+          </p>
+
+          <p>
+            <strong>Segundo:</strong>
+            ${vehiculo2}
+          </p>
+
+          <h3>
+            Vehículos para retoma
+          </h3>
+
+          <p>
+            <strong>Primero:</strong>
+            ${retoma1}
+          </p>
+
+          <p>
+            <strong>Segundo:</strong>
+            ${retoma2}
+          </p>
+
+          <h3>
+            Información adicional
+          </h3>
+
+          <p>
+            ${info}
+          </p>
+
+          <hr>
+
+          <div
+            style="
+              display:flex;
+              justify-content:space-between;
+              align-items:center;
+              gap:12px;
+              flex-wrap:wrap;
+            "
+          >
+
+            <h3 style="margin:0;">
+              Historial
+            </h3>
+
+            <button
+              type="button"
+              class="btn btn-primary"
+              onclick="ClienteFichaUI.registrarEvento()"
+            >
+              ＋ Registrar evento
+            </button>
+
+          </div>
+
+          <div id="historial-cliente">
+
+            <div class="loading">
+              Cargando historial...
+            </div>
+
+          </div>
+
+        </div>
+      `;
+
+      EventoHistorialUI.cargar(
+        cliente.idCliente
+      );
+    },
+
+    /**
+     * Abre el formulario de edición.
+     */
+    editar() {
+
+      if (!this.cliente) {
+        return;
+      }
+
+      ClienteFormularioUI.editar(
+        this.cliente
+      );
+    },
+
+    /**
+     * Vuelve a la lista de clientes.
+     */
+    volver() {
+
+      NavegacionUI.mostrar(
+        'clientes'
+      );
+    },
+
+    /**
+     * Abre el formulario de eventos.
+     */
+    registrarEvento() {
+
+      if (!this.cliente) {
+        return;
+      }
+
+      EventoFormularioUI.mostrar(
+        this.cliente.idCliente
+      );
+    }
+
+  };
+
+</script>

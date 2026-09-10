@@ -1,0 +1,46 @@
+<!--
+  ARCHIVO: AppUI.html
+
+  Coordinador principal del frontend.
+
+  Responsabilidad:
+  - Inicializar la aplicación.
+  - Mostrar la vista inicial.
+  - Coordinar el arranque de los módulos de interfaz.
+
+  No debe contener:
+  - HTML de listas de clientes.
+  - Formularios.
+  - Ficha de cliente.
+  - Lógica específica de clientes.
+  - Lógica específica de eventos.
+  - Acceso directo al backend para operaciones de negocio.
+  - CSS.
+-->
+
+<script>
+
+  const AppUI = {
+
+    /**
+     * Inicializa la aplicación.
+     */
+    iniciar() {
+
+      NavegacionUI.mostrar('clientes');
+
+      ClienteListaUI.cargar();
+    }
+
+  };
+
+
+  /**
+   * Iniciar la aplicación cuando el documento esté listo.
+   */
+  document.addEventListener(
+    'DOMContentLoaded',
+    () => AppUI.iniciar()
+  );
+
+</script>

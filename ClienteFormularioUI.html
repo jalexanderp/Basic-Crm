@@ -1,0 +1,857 @@
+<!--
+  ARCHIVO: ClienteFormularioUI.html
+
+  Formulario de clientes.
+
+  Responsabilidad:
+  - Mostrar el formulario de creación y edición.
+  - Limpiar los campos.
+  - Cargar datos de un cliente existente.
+  - Validar los campos obligatorios en frontend.
+  - Evitar doble envío.
+  - Enviar los datos al backend.
+  - Gestionar creación y actualización.
+
+  No debe contener:
+  - acceso directo a Google Sheets.
+  - lógica de negocio.
+  - generación de IDs.
+  - lógica de eventos.
+  - lógica de ficha del cliente.
+  - sistema de navegación.
+  - CSS global.
+-->
+
+<script>
+
+  const ClienteFormularioUI = {
+
+    guardando: false,
+
+    modo: 'crear',
+
+    clienteEditando: null,
+
+    mostrar() {
+
+      const vista =
+        NavegacionUI.obtenerElemento(
+          'nuevoCliente'
+        );
+
+      if (!vista) {
+        return;
+      }
+
+      this.guardando = false;
+      this.modo = 'crear';
+      this.clienteEditando = null;
+
+      vista.innerHTML =
+        this._crearFormulario();
+
+      NavegacionUI.mostrar(
+        'nuevoCliente'
+      );
+    },
+
+    editar(cliente) {
+
+      if (
+        !cliente ||
+        !cliente.idCliente
+      ) {
+        return;
+      }
+
+      const vista =
+        NavegacionUI.obtenerElemento(
+          'nuevoCliente'
+        );
+
+      if (!vista) {
+        return;
+      }
+
+      this.guardando = false;
+      this.modo = 'editar';
+      this.clienteEditando = cliente;
+
+      vista.innerHTML =
+        this._crearFormulario();
+
+      NavegacionUI.mostrar(
+        'nuevoCliente'
+      );
+
+      this._cargarDatosCliente(
+        cliente
+      );
+    },
+
+    _crearFormulario() {
+
+      const esEdicion =
+        this.modo === 'editar';
+
+      const titulo =
+        esEdicion
+          ? 'Editar cliente'
+          : 'Nuevo cliente';
+
+      const textoBoton =
+        esEdicion
+          ? 'Guardar cambios'
+          : 'Guardar cliente';
+
+      return `
+        <div class="card">
+
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 12px;
+              margin-bottom: 20px;
+            "
+          >
+
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="ClienteFormularioUI.cancelar()"
+            >
+              ← Volver
+            </button>
+
+            <h2 style="margin: 0;">
+              ${titulo}
+            </h2>
+
+          </div>
+
+          <form
+            id="formulario-cliente"
+            novalidate
+            onsubmit="ClienteFormularioUI.guardar(event)"
+          >
+
+            <h3>Datos principales</h3>
+
+            <div class="form-group">
+
+              <label
+                class="form-label"
+                for="cliente-primer-nombre"
+              >
+                Primer nombre
+                <span class="form-required">*</span>
+              </label>
+
+              <input
+                type="text"
+                id="cliente-primer-nombre"
+                name="primerNombre"
+                autocomplete="given-name"
+                required
+              >
+
+              <div
+                id="error-primer-nombre"
+                class="field-error"
+                hidden
+              ></div>
+
+            </div>
+
+            <div class="form-group">
+
+              <label
+                class="form-label"
+                for="cliente-nombre-completo"
+              >
+                Nombre completo
+                <span class="form-required">*</span>
+              </label>
+
+              <input
+                type="text"
+                id="cliente-nombre-completo"
+                name="nombreCompleto"
+                autocomplete="name"
+                required
+              >
+
+              <div
+                id="error-nombre-completo"
+                class="field-error"
+                hidden
+              ></div>
+
+            </div>
+
+            <div class="form-group">
+
+              <label
+                class="form-label"
+                for="cliente-celular"
+              >
+                Celular
+                <span class="form-required">*</span>
+              </label>
+
+              <input
+                type="tel"
+                id="cliente-celular"
+                name="celular"
+                autocomplete="tel"
+                required
+              >
+
+              <div
+                id="error-celular"
+                class="field-error"
+                hidden
+              ></div>
+
+            </div>
+
+            <div class="form-group">
+
+              <label
+                class="form-label"
+                for="cliente-email"
+              >
+                Email
+              </label>
+
+              <input
+                type="email"
+                id="cliente-email"
+                name="email"
+                autocomplete="email"
+              >
+
+            </div>
+
+            <h3>Vehículo</h3>
+
+            <div class="form-group">
+
+              <label
+                class="form-label"
+                for="cliente-primer-vehiculo-interes"
+              >
+                Vehículo de mayor interés
+                <span class="form-required">*</span>
+              </label>
+
+              <input
+                type="text"
+                id="cliente-primer-vehiculo-interes"
+                name="primerVehiculoInteres"
+                required
+              >
+
+              <div
+                id="error-primer-vehiculo-interes"
+                class="field-error"
+                hidden
+              ></div>
+
+            </div>
+
+            <div class="form-group">
+
+              <label
+                class="form-label"
+                for="cliente-segundo-vehiculo-interes"
+              >
+                Segundo vehículo de interés
+              </label>
+
+              <input
+                type="text"
+                id="cliente-segundo-vehiculo-interes"
+                name="segundoVehiculoInteres"
+              >
+
+            </div>
+
+            <h3>Retoma</h3>
+
+            <div class="form-group">
+
+              <label
+                class="form-label"
+                for="cliente-primer-vehiculo-retoma"
+              >
+                Primer vehículo
+              </label>
+
+              <input
+                type="text"
+                id="cliente-primer-vehiculo-retoma"
+                name="primerVehiculoRetoma"
+              >
+
+            </div>
+
+            <div class="form-group">
+
+              <label
+                class="form-label"
+                for="cliente-segundo-vehiculo-retoma"
+              >
+                Segundo vehículo
+              </label>
+
+              <input
+                type="text"
+                id="cliente-segundo-vehiculo-retoma"
+                name="segundoVehiculoRetoma"
+              >
+
+            </div>
+
+            <h3>Información adicional</h3>
+
+            <div class="form-group">
+
+              <label
+                class="form-label"
+                for="cliente-fecha-nacimiento"
+              >
+                Fecha de nacimiento
+              </label>
+
+              <input
+                type="date"
+                id="cliente-fecha-nacimiento"
+                name="fechaNacimiento"
+              >
+
+            </div>
+
+            <div class="form-group">
+
+              <label
+                class="form-label"
+                for="cliente-info-adicional"
+              >
+                Información adicional
+              </label>
+
+              <textarea
+                id="cliente-info-adicional"
+                name="infoAdicional"
+              ></textarea>
+
+            </div>
+
+            <div
+              id="cliente-formulario-mensaje"
+              hidden
+            ></div>
+
+            <div
+              style="
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+              "
+            >
+
+              <button
+                type="button"
+                class="btn btn-secondary"
+                onclick="ClienteFormularioUI.cancelar()"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="submit"
+                id="cliente-btn-guardar"
+                class="btn btn-primary"
+              >
+                ${textoBoton}
+              </button>
+
+            </div>
+
+          </form>
+
+        </div>
+      `;
+    },
+
+    _cargarDatosCliente(cliente) {
+
+      this._establecerValor(
+        'cliente-primer-nombre',
+        cliente.primerNombre
+      );
+
+      this._establecerValor(
+        'cliente-nombre-completo',
+        cliente.nombreCompleto
+      );
+
+      this._establecerValor(
+        'cliente-celular',
+        cliente.celular
+      );
+
+      this._establecerValor(
+        'cliente-email',
+        cliente.email
+      );
+
+      this._establecerValor(
+        'cliente-fecha-nacimiento',
+        cliente.fechaNacimiento
+      );
+
+      this._establecerValor(
+        'cliente-primer-vehiculo-interes',
+        cliente.primerVehiculoInteres
+      );
+
+      this._establecerValor(
+        'cliente-segundo-vehiculo-interes',
+        cliente.segundoVehiculoInteres
+      );
+
+      this._establecerValor(
+        'cliente-primer-vehiculo-retoma',
+        cliente.primerVehiculoRetoma
+      );
+
+      this._establecerValor(
+        'cliente-segundo-vehiculo-retoma',
+        cliente.segundoVehiculoRetoma
+      );
+
+      this._establecerValor(
+        'cliente-info-adicional',
+        cliente.infoAdicional
+      );
+    },
+
+    cancelar() {
+
+      if (this.guardando) {
+        return;
+      }
+
+      if (
+        this.modo === 'editar' &&
+        this.clienteEditando
+      ) {
+
+        NavegacionUI.mostrar(
+          'ficha'
+        );
+
+        ClienteFichaUI.mostrar(
+          this.clienteEditando
+        );
+
+        return;
+      }
+
+      NavegacionUI.mostrar(
+        'clientes'
+      );
+    },
+
+    guardar(evento) {
+
+      evento.preventDefault();
+
+      if (this.guardando) {
+        return;
+      }
+
+      this._limpiarErrores();
+
+      const datos =
+        this._obtenerDatos();
+
+      if (!this._validar(datos)) {
+        return;
+      }
+
+      if (this.modo === 'editar') {
+
+        if (
+          !this.clienteEditando ||
+          !this.clienteEditando.idCliente
+        ) {
+
+          this._mostrarMensaje(
+            'No se encontró el cliente que se está editando.',
+            'error'
+          );
+
+          return;
+        }
+
+        datos.idCliente =
+          this.clienteEditando.idCliente;
+      }
+
+      this.guardando = true;
+
+      this._mostrarGuardando();
+
+      if (this.modo === 'editar') {
+
+        google.script.run
+          .withSuccessHandler(
+            this._guardadoExitoso.bind(this)
+          )
+          .withFailureHandler(
+            this._guardadoFallido.bind(this)
+          )
+          .apiActualizarCliente(datos);
+
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler(
+          this._guardadoExitoso.bind(this)
+        )
+        .withFailureHandler(
+          this._guardadoFallido.bind(this)
+        )
+        .apiCrearCliente(datos);
+    },
+
+    _obtenerDatos() {
+
+      return {
+
+        primerNombre:
+          this._valor(
+            'cliente-primer-nombre'
+          ),
+
+        nombreCompleto:
+          this._valor(
+            'cliente-nombre-completo'
+          ),
+
+        celular:
+          this._valor(
+            'cliente-celular'
+          ),
+
+        email:
+          this._valor(
+            'cliente-email'
+          ),
+
+        fechaNacimiento:
+          this._valor(
+            'cliente-fecha-nacimiento'
+          ),
+
+        primerVehiculoInteres:
+          this._valor(
+            'cliente-primer-vehiculo-interes'
+          ),
+
+        segundoVehiculoInteres:
+          this._valor(
+            'cliente-segundo-vehiculo-interes'
+          ),
+
+        primerVehiculoRetoma:
+          this._valor(
+            'cliente-primer-vehiculo-retoma'
+          ),
+
+        segundoVehiculoRetoma:
+          this._valor(
+            'cliente-segundo-vehiculo-retoma'
+          ),
+
+        infoAdicional:
+          this._valor(
+            'cliente-info-adicional'
+          )
+      };
+    },
+
+    _validar(datos) {
+
+      let valido = true;
+
+      if (!datos.primerNombre) {
+
+        this._mostrarError(
+          'error-primer-nombre',
+          'El primer nombre es obligatorio.'
+        );
+
+        valido = false;
+      }
+
+      if (!datos.nombreCompleto) {
+
+        this._mostrarError(
+          'error-nombre-completo',
+          'El nombre completo es obligatorio.'
+        );
+
+        valido = false;
+      }
+
+      if (!datos.celular) {
+
+        this._mostrarError(
+          'error-celular',
+          'El celular es obligatorio.'
+        );
+
+        valido = false;
+      }
+
+      if (!datos.primerVehiculoInteres) {
+
+        this._mostrarError(
+          'error-primer-vehiculo-interes',
+          'El vehículo de mayor interés es obligatorio.'
+        );
+
+        valido = false;
+      }
+
+      return valido;
+    },
+
+    _mostrarError(
+      idElemento,
+      mensaje
+    ) {
+
+      const elemento =
+        document.getElementById(
+          idElemento
+        );
+
+      if (!elemento) {
+        return;
+      }
+
+      elemento.textContent =
+        mensaje;
+
+      elemento.hidden = false;
+    },
+
+    _limpiarErrores() {
+
+      const errores =
+        document.querySelectorAll(
+          '#formulario-cliente .field-error'
+        );
+
+      errores.forEach(error => {
+
+        error.textContent = '';
+        error.hidden = true;
+      });
+
+      const mensaje =
+        document.getElementById(
+          'cliente-formulario-mensaje'
+        );
+
+      if (mensaje) {
+
+        mensaje.textContent = '';
+        mensaje.hidden = true;
+      }
+    },
+
+    _mostrarGuardando() {
+
+      const boton =
+        document.getElementById(
+          'cliente-btn-guardar'
+        );
+
+      if (!boton) {
+        return;
+      }
+
+      boton.disabled = true;
+
+      boton.textContent =
+        this.modo === 'editar'
+          ? 'Guardando cambios...'
+          : 'Guardando...';
+    },
+
+    _restaurarBoton(habilitar = true) {
+
+      const boton =
+        document.getElementById(
+          'cliente-btn-guardar'
+        );
+
+      if (!boton) {
+        return;
+      }
+
+      boton.disabled = !habilitar;
+
+      boton.textContent =
+        this.modo === 'editar'
+          ? 'Guardar cambios'
+          : 'Guardar cliente';
+    },
+
+    _guardadoExitoso(cliente) {
+
+      this.guardando = false;
+
+      if (!cliente) {
+
+        this._restaurarBoton();
+
+        this._mostrarMensaje(
+          'La operación se realizó correctamente.',
+          'success'
+        );
+
+        return;
+      }
+
+      /*
+       * EDICIÓN
+       */
+      if (this.modo === 'editar') {
+
+        this.clienteEditando =
+          cliente;
+
+        /*
+         * Actualizamos la copia que conserva
+         * ClienteListaUI, si ese cliente ya fue
+         * cargado en la lista.
+         *
+         * No hacemos una nueva llamada al backend.
+         */
+        ClienteListaUI.actualizarCliente(
+          cliente
+        );
+
+        this._restaurarBoton();
+
+        NavegacionUI.mostrar(
+          'ficha'
+        );
+
+        ClienteFichaUI.mostrar(
+          cliente
+        );
+
+        return;
+      }
+
+      /*
+       * CREACIÓN
+       */
+      this._restaurarBoton();
+
+      NavegacionUI.mostrar(
+        'clientes'
+      );
+
+      /*
+       * Una creación agrega un nuevo registro
+       * al final de Sheets. Recargamos la primera
+       * página para que el nuevo cliente aparezca
+       * inmediatamente entre los más recientes.
+       */
+      ClienteListaUI.cargar();
+    },
+
+    _guardadoFallido(error) {
+
+      this.guardando = false;
+
+      this._restaurarBoton();
+
+      const mensaje =
+        error && error.message
+          ? error.message
+          : 'No fue posible guardar el cliente.';
+
+      this._mostrarMensaje(
+        mensaje,
+        'error'
+      );
+    },
+
+    _mostrarMensaje(
+      mensaje,
+      tipo
+    ) {
+
+      const elemento =
+        document.getElementById(
+          'cliente-formulario-mensaje'
+        );
+
+      if (!elemento) {
+        return;
+      }
+
+      elemento.className =
+        tipo === 'error'
+          ? 'mensaje mensaje-error'
+          : 'mensaje mensaje-success';
+
+      elemento.textContent =
+        mensaje;
+
+      elemento.hidden = false;
+    },
+
+    _valor(id) {
+
+      const elemento =
+        document.getElementById(id);
+
+      if (!elemento) {
+        return '';
+      }
+
+      return elemento.value.trim();
+    },
+
+    _establecerValor(
+      id,
+      valor
+    ) {
+
+      const elemento =
+        document.getElementById(id);
+
+      if (!elemento) {
+        return;
+      }
+
+      elemento.value =
+        valor || '';
+    }
+
+  };
+
+</script>

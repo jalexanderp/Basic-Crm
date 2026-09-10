@@ -1,0 +1,53 @@
+<!--
+  ARCHIVO: FrontendUtils.html
+
+  Utilidades comunes del frontend.
+
+  Responsabilidad:
+  - Escapar valores antes de insertarlos en HTML.
+  - Proporcionar pequeñas utilidades reutilizables.
+
+  No debe contener:
+  - lógica de clientes.
+  - lógica de eventos.
+  - acceso al backend.
+  - navegación.
+-->
+
+<script>
+
+  const FrontendUtils = {
+
+    /**
+     * Escapa un valor para insertarlo como texto HTML.
+     *
+     * @param {*} valor
+     * @returns {string}
+     */
+    escaparHtml(valor) {
+
+      return String(valor ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    },
+
+
+    /**
+     * Devuelve un texto o un guion cuando el valor está vacío.
+     *
+     * @param {*} valor
+     * @returns {string}
+     */
+    textoOGrion(valor) {
+
+      const texto = String(valor ?? '').trim();
+
+      return texto || '—';
+    }
+
+  };
+
+</script>

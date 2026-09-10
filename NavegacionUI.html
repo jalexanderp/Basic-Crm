@@ -1,0 +1,85 @@
+<!--
+  ARCHIVO: NavegacionUI.html
+
+  Sistema central de navegación del frontend.
+
+  Responsabilidad:
+  - Mostrar una vista.
+  - Ocultar las demás vistas.
+  - Mantener una única estrategia de navegación.
+
+  No debe contener:
+  - lógica de clientes.
+  - lógica de eventos.
+  - formularios.
+  - acceso al backend.
+  - HTML específico de cada pantalla.
+-->
+
+<script>
+
+  const NavegacionUI = {
+
+    /**
+     * Vistas disponibles en la aplicación.
+     *
+     * Los elementos correspondientes pueden existir
+     * progresivamente a medida que construyamos el CRM.
+     */
+    vistas: [
+      'clientes',
+      'nuevoCliente',
+      'ficha',
+      'nuevoEvento'
+    ],
+
+
+    /**
+     * Muestra una vista determinada y oculta las demás.
+     *
+     * @param {string} nombreVista Nombre de la vista.
+     */
+    mostrar(nombreVista) {
+
+      if (!this.vistas.includes(nombreVista)) {
+        console.error(
+          'Vista no registrada:',
+          nombreVista
+        );
+
+        return;
+      }
+
+      this.vistas.forEach(nombre => {
+
+        const elemento = document.getElementById(
+          `vista-${nombre}`
+        );
+
+        if (!elemento) {
+          return;
+        }
+
+        elemento.hidden = nombre !== nombreVista;
+      });
+    },
+
+
+    /**
+     * Obtiene el elemento HTML correspondiente a una vista.
+     *
+     * @param {string} nombreVista Nombre de la vista.
+     * @returns {HTMLElement|null}
+     */
+    obtenerElemento(nombreVista) {
+      if (!this.vistas.includes(nombreVista)) {
+        return null;
+      }
+
+      return document.getElementById(
+        `vista-${nombreVista}`
+      );
+    }
+  };
+
+</script>

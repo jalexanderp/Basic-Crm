@@ -1,0 +1,332 @@
+<!--
+  ARCHIVO: CSS.html
+
+  Estilos globales del CRM.
+
+  Responsabilidad:
+  - Definir la apariencia general de la aplicación.
+  - Mantener un diseño mobile-first.
+  - Proporcionar componentes visuales reutilizables.
+
+  No debe contener:
+  - HTML de pantallas.
+  - JavaScript.
+  - lógica de negocio.
+  - lógica de navegación.
+-->
+
+<style>
+
+  /* ============================================================
+     VARIABLES
+     ============================================================ */
+
+  :root {
+    --color-primary: #1f4e79;
+    --color-primary-dark: #173a5c;
+    --color-background: #f5f7fa;
+    --color-surface: #ffffff;
+    --color-text: #1f2933;
+    --color-text-muted: #667085;
+    --color-border: #d9dee7;
+    --color-danger: #c62828;
+    --color-success: #2e7d32;
+
+    --radius: 10px;
+
+    --shadow-card:
+      0 2px 8px rgba(0, 0, 0, 0.08);
+
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+  }
+
+
+  /* ============================================================
+     RESET BÁSICO
+     ============================================================ */
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+  }
+
+  body {
+    font-family:
+      Arial,
+      Helvetica,
+      sans-serif;
+
+    background: var(--color-background);
+    color: var(--color-text);
+
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+
+  /* ============================================================
+     APLICACIÓN
+     ============================================================ */
+
+  #app {
+    min-height: 100vh;
+  }
+
+  #app-header {
+    background: var(--color-primary);
+    color: #ffffff;
+
+    padding: 16px;
+  }
+
+  #app-header h1 {
+    margin: 0;
+
+    font-size: 20px;
+    font-weight: 600;
+  }
+
+  #app-content {
+    width: 100%;
+    max-width: 1100px;
+
+    margin: 0 auto;
+    padding: var(--spacing-md);
+  }
+
+
+  /* ============================================================
+     BOTONES
+     ============================================================ */
+
+  button {
+    font: inherit;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+
+    min-height: 44px;
+
+    padding: 10px 16px;
+
+    border: 0;
+    border-radius: var(--radius);
+
+    cursor: pointer;
+
+    font-weight: 600;
+
+    transition:
+      background-color 0.15s ease,
+      opacity 0.15s ease;
+  }
+
+  .btn-primary {
+    background: var(--color-primary);
+    color: #ffffff;
+  }
+
+  .btn-primary:hover {
+    background: var(--color-primary-dark);
+  }
+
+  .btn-secondary {
+    background: #e9edf3;
+    color: var(--color-text);
+  }
+
+  .btn-danger {
+    background: var(--color-danger);
+    color: #ffffff;
+  }
+
+  .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+
+  /* ============================================================
+     TARJETAS
+     ============================================================ */
+
+  .card {
+    background: var(--color-surface);
+
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+
+    box-shadow: var(--shadow-card);
+
+    padding: var(--spacing-md);
+  }
+
+
+  /* ============================================================
+     FORMULARIOS
+     ============================================================ */
+
+  .form-group {
+    margin-bottom: var(--spacing-md);
+  }
+
+  .form-label {
+    display: block;
+
+    margin-bottom: 6px;
+
+    font-weight: 600;
+  }
+
+  .form-required {
+    color: var(--color-danger);
+  }
+
+  input,
+  textarea,
+  select {
+    width: 100%;
+
+    min-height: 44px;
+
+    padding: 10px 12px;
+
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+
+    background: #ffffff;
+    color: var(--color-text);
+
+    font: inherit;
+  }
+
+  textarea {
+    min-height: 100px;
+    resize: vertical;
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    outline: none;
+
+    border-color: var(--color-primary);
+
+    box-shadow:
+      0 0 0 2px rgba(31, 78, 121, 0.12);
+  }
+
+  .field-error {
+    margin-top: 4px;
+
+    color: var(--color-danger);
+
+    font-size: 14px;
+  }
+
+
+  /* ============================================================
+     CLIENTES
+     ============================================================ */
+
+  .cliente-card {
+    margin-bottom: var(--spacing-md);
+
+    cursor: pointer;
+  }
+
+  .cliente-card-nombre {
+    margin: 0 0 6px;
+
+    font-size: 17px;
+    font-weight: 600;
+  }
+
+  .cliente-card-info {
+    margin: 3px 0;
+
+    color: var(--color-text-muted);
+
+    font-size: 14px;
+  }
+
+
+  /* ============================================================
+     MENSAJES
+     ============================================================ */
+
+  .mensaje {
+    padding: 12px 14px;
+
+    border-radius: var(--radius);
+
+    margin-bottom: var(--spacing-md);
+  }
+
+  .mensaje-error {
+    background: #fdecec;
+    color: var(--color-danger);
+  }
+
+  .mensaje-success {
+    background: #edf7ed;
+    color: var(--color-success);
+  }
+
+
+  /* ============================================================
+     ESTADOS
+     ============================================================ */
+
+  .estado-vacio {
+    padding: 32px 16px;
+
+    text-align: center;
+
+    color: var(--color-text-muted);
+  }
+
+  .loading {
+    padding: 24px;
+
+    text-align: center;
+
+    color: var(--color-text-muted);
+  }
+
+
+  /* ============================================================
+     RESPONSIVE
+     ============================================================ */
+
+  @media (min-width: 768px) {
+
+    #app-header {
+      padding: 18px 24px;
+    }
+
+    #app-header h1 {
+      font-size: 22px;
+    }
+
+    #app-content {
+      padding: var(--spacing-lg);
+    }
+
+  }
+
+</style>

@@ -1,0 +1,1448 @@
+<!--
+  ARCHIVO: EventoHistorialUI.html
+
+  Historial de eventos del cliente.
+
+  Responsabilidad:
+  - Cargar los eventos de un cliente.
+  - Mostrar el historial.
+  - Formatear fechas y horas.
+  - Permitir actualizar comentario.
+  - Permitir actualizar resultado.
+  - Permitir actualizar seguimiento.
+  - Mostrar estados de carga y vacío.
+
+  No contiene:
+  - acceso directo a Google Sheets.
+  - lógica de negocio.
+  - creación de eventos.
+  - integración con Google Calendar.
+-->
+
+<script>
+
+  const EventoHistorialUI = {
+
+    eventos: [],
+
+    eventoEditando: null,
+
+
+    /**
+     * Carga el historial de un cliente.
+     *
+     * @param {string} idCliente
+     */
+    cargar(idCliente) {
+
+      const contenedor =
+        document.getElementById(
+          'historial-cliente'
+        );
+
+      if (!contenedor || !idCliente) {
+        return;
+      }
+
+      contenedor.innerHTML = `
+        <div class="loading">
+          Cargando historial...
+        </div>
+      `;
+
+      google.script.run
+        .withSuccessHandler(
+          this._cargaExitosa.bind(this)
+        )
+        .withFailureHandler(
+          this._cargaFallida.bind(this)
+        )
+        .apiObtenerEventos(idCliente);
+    },
+
+
+    /**
+     * Procesa los eventos recibidos.
+     *
+     * @param {Array} eventos
+     */
+    _cargaExitosa(eventos) {
+
+      this.eventos =
+        Array.isArray(eventos)
+          ? eventos
+          : [];
+
+      this.mostrar(
+        this.eventos
+      );
+    },
+
+
+    /**
+     * Gestiona un error de carga.
+     *
+     * @param {Error} error
+     */
+    _cargaFallida(error) {
+
+      const contenedor =
+        document.getElementById(
+          'historial-cliente'
+        );
+
+      if (!contenedor) {
+        return;
+      }
+
+      const mensaje =
+        error && error.message
+          ? error.message
+          : 'No fue posible cargar el historial.';
+
+      contenedor.innerHTML = `
+        <div class="mensaje mensaje-error">
+          ${FrontendUtils.escaparHtml(mensaje)}
+        </div>
+      `;
+    },
+
+
+    /**
+     * Muestra los eventos.
+     *
+     * @param {Array} eventos
+     */
+    mostrar(eventos) {
+
+      const contenedor =
+        document.getElementById(
+          'historial-cliente'
+        );
+
+      if (!contenedor) {
+        return;
+      }
+
+      if (!eventos.length) {
+
+        contenedor.innerHTML = `
+          <div class="estado-vacio">
+            No existen eventos registrados.
+          </div>
+        `;
+
+        return;
+      }
+
+      contenedor.innerHTML =
+        eventos
+          .map(
+            evento =>
+              this._crearEvento(evento)
+          )
+          .join('');
+    },
+
+
+    /**
+     * Genera una tarjeta de evento.
+     *
+     * @param {Object} evento
+     * @returns {string}
+     */
+    _crearEvento(evento) {
+
+      const idEvento =
+        FrontendUtils.escaparHtml(
+          evento.idEvento || ''
+        );
+
+      const tipo =
+        FrontendUtils.textoOGrion(
+          FrontendUtils.escaparHtml(
+            evento.tipoEvento || ''
+          )
+        );
+
+      const comentario =
+        FrontendUtils.textoOGrion(
+          FrontendUtils.escaparHtml(
+            evento.comentario || ''
+          )
+        );
+
+      const resultado =
+        FrontendUtils.textoOGrion(
+          FrontendUtils.escaparHtml(
+            evento.resultadoEvento || ''
+          )
+        );
+
+      const seguimiento =
+        FrontendUtils.textoOGrion(
+          FrontendUtils.escaparHtml(
+            evento.requiereSeguimiento || ''
+          )
+        );
+
+      const fechaRegistro =
+        this._formatearFecha(
+          evento.fechaRegistro
+        );
+
+      const horaRegistro =
+        this._formatearHora(
+          evento.horaRegistro
+        );
+
+      const fechaEvento =
+        this._formatearFecha(
+          evento.fechaEvento
+        );
+
+      const horaEvento =
+        this._formatearHora(
+          evento.horaEvento
+        );
+
+      return `
+        <article
+          class="card"
+          data-id-evento="${idEvento}"
+        >
+
+          <div
+            style="
+              display:flex;
+              justify-content:space-between;
+              gap:12px;
+              align-items:flex-start;
+              flex-wrap:wrap;
+            "
+          >
+
+            <div>
+
+              <h4 style="margin:0 0 6px 0;">
+                ${tipo}
+              </h4>
+
+              <small>
+                ${fechaRegistro}
+                ${
+                  horaRegistro
+                    ? ` · ${horaRegistro}`
+                    : ''
+                }
+              </small>
+
+            </div>
+
+            <strong>
+              ${resultado}
+            </strong>
+
+          </div>
+
+
+          <p>
+            ${comentario}
+          </p>
+
+
+          <p class="cliente-card-info">
+
+            <strong>
+              Seguimiento:
+            </strong>
+
+            ${seguimiento}
+
+            ${
+              evento.requiereSeguimiento === 'Sí'
+                ? `
+                  · Fecha:
+                  ${fechaEvento}
+                  ${
+                    horaEvento
+                      ? ` · ${horaEvento}`
+                      : ''
+                  }
+                `
+                : ''
+            }
+
+          </p>
+
+
+          ${
+            evento.requiereSeguimiento === 'Sí' &&
+            evento.motivoSeguimiento
+              ? `
+                <p class="cliente-card-info">
+                  <strong>
+                    Motivo:
+                  </strong>
+                  ${FrontendUtils.escaparHtml(
+                    evento.motivoSeguimiento
+                  )}
+                </p>
+              `
+              : ''
+          }
+
+
+          <div
+            style="
+              margin-top:12px;
+              display:flex;
+              justify-content:flex-end;
+            "
+          >
+
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="EventoHistorialUI.editar('${idEvento}')"
+            >
+              Editar
+            </button>
+
+          </div>
+
+        </article>
+      `;
+    },
+
+
+    /**
+     * Abre la edición de un evento.
+     *
+     * @param {string} idEvento
+     */
+    editar(idEvento) {
+
+      const evento =
+        this.eventos.find(
+          item =>
+            String(item.idEvento) ===
+            String(idEvento)
+        );
+
+      if (!evento) {
+        return;
+      }
+
+      this.eventoEditando =
+        evento;
+
+      this._mostrarFormularioEdicion(
+        evento
+      );
+    },
+
+
+    /**
+     * Muestra el formulario de edición.
+     *
+     * Permite actualizar:
+     * - comentario
+     * - requiere seguimiento
+     * - fecha de seguimiento
+     * - hora de seguimiento
+     * - motivo del seguimiento
+     * - resultado del evento
+     *
+     * @param {Object} evento
+     */
+    _mostrarFormularioEdicion(evento) {
+
+      const contenedor =
+        document.getElementById(
+          'historial-cliente'
+        );
+
+      if (!contenedor) {
+        return;
+      }
+
+      const idEvento =
+        FrontendUtils.escaparHtml(
+          evento.idEvento || ''
+        );
+
+      const comentario =
+        FrontendUtils.escaparHtml(
+          evento.comentario || ''
+        );
+
+      const resultadoEvento =
+        FrontendUtils.escaparHtml(
+          evento.resultadoEvento || ''
+        );
+
+      const fecha =
+        this._convertirFechaInput(
+          evento.fechaEvento
+        );
+
+      const hora =
+        this._convertirHoraInput(
+          evento.horaEvento
+        );
+
+      const motivo =
+        FrontendUtils.escaparHtml(
+          evento.motivoSeguimiento || ''
+        );
+
+      const requiereSi =
+        evento.requiereSeguimiento === 'Sí'
+          ? 'selected'
+          : '';
+
+      const requiereNo =
+        evento.requiereSeguimiento === 'No'
+          ? 'selected'
+          : '';
+
+      contenedor.innerHTML = `
+
+        <div class="card">
+
+          <h3 style="margin-top:0;">
+            Actualizar evento
+          </h3>
+
+          <p class="cliente-card-info">
+            Evento: ${idEvento}
+          </p>
+
+
+          <div class="form-group">
+
+            <label
+              class="form-label"
+              for="editar-evento-comentario"
+            >
+              Comentario
+              <span class="form-required">*</span>
+            </label>
+
+            <textarea
+              id="editar-evento-comentario"
+              rows="4"
+              required
+            >${comentario}</textarea>
+
+            <div
+              id="editar-error-comentario"
+              class="field-error"
+              hidden
+            ></div>
+
+          </div>
+
+
+          <div class="form-group">
+
+            <label
+              class="form-label"
+              for="editar-evento-seguimiento"
+            >
+              ¿Requiere seguimiento?
+              <span class="form-required">*</span>
+            </label>
+
+            <select
+              id="editar-evento-seguimiento"
+              onchange="EventoHistorialUI._configurarEdicionSeguimiento()"
+            >
+
+              <option
+                value="No"
+                ${requiereNo}
+              >
+                No
+              </option>
+
+              <option
+                value="Sí"
+                ${requiereSi}
+              >
+                Sí
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div
+            id="editar-campos-seguimiento"
+            ${
+              evento.requiereSeguimiento === 'Sí'
+                ? ''
+                : 'hidden'
+            }
+          >
+
+            <div class="form-group">
+
+              <label
+                class="form-label"
+                for="editar-evento-fecha"
+              >
+                Fecha del seguimiento
+                <span class="form-required">*</span>
+              </label>
+
+              <input
+                type="date"
+                id="editar-evento-fecha"
+                value="${fecha}"
+              >
+
+              <div
+                id="editar-error-fecha"
+                class="field-error"
+                hidden
+              ></div>
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label
+                class="form-label"
+                for="editar-evento-hora"
+              >
+                Hora del seguimiento
+              </label>
+
+              <input
+                type="time"
+                id="editar-evento-hora"
+                value="${hora}"
+              >
+
+            </div>
+
+
+            <div class="form-group">
+
+              <label
+                class="form-label"
+                for="editar-evento-motivo"
+              >
+                Motivo del seguimiento
+              </label>
+
+              <textarea
+                id="editar-evento-motivo"
+                rows="3"
+              >${motivo}</textarea>
+
+            </div>
+
+          </div>
+
+
+          <!--
+            Resultado del evento se mantiene
+            al final del formulario.
+          -->
+          <div class="form-group">
+
+            <label
+              class="form-label"
+              for="editar-evento-resultado"
+            >
+              Resultado del evento
+              <span class="form-required">*</span>
+            </label>
+
+            <select
+              id="editar-evento-resultado"
+              required
+            >
+
+              <option
+                value=""
+                ${
+                  !resultadoEvento
+                    ? 'selected'
+                    : ''
+                }
+              >
+                Seleccione un resultado
+              </option>
+
+              <option
+                value="Cierre de venta"
+                ${
+                  resultadoEvento ===
+                  'Cierre de venta'
+                    ? 'selected'
+                    : ''
+                }
+              >
+                Cierre de venta
+              </option>
+
+              <option
+                value="Continúa negociando"
+                ${
+                  resultadoEvento ===
+                  'Continúa negociando'
+                    ? 'selected'
+                    : ''
+                }
+              >
+                Continúa negociando
+              </option>
+
+              <option
+                value="Desiste del negocio"
+                ${
+                  resultadoEvento ===
+                  'Desiste del negocio'
+                    ? 'selected'
+                    : ''
+                }
+              >
+                Desiste del negocio
+              </option>
+
+            </select>
+
+            <div
+              id="editar-error-resultado"
+              class="field-error"
+              hidden
+            ></div>
+
+          </div>
+
+
+          <div
+            id="editar-evento-mensaje"
+            hidden
+          ></div>
+
+
+          <div
+            style="
+              display:flex;
+              gap:10px;
+              flex-wrap:wrap;
+              margin-top:16px;
+            "
+          >
+
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="EventoHistorialUI.cancelarEdicion()"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="button"
+              id="editar-evento-btn"
+              class="btn btn-primary"
+              onclick="EventoHistorialUI.guardarEdicion()"
+            >
+              Guardar cambios
+            </button>
+
+          </div>
+
+        </div>
+      `;
+
+      this._configurarEdicionSeguimiento();
+    },
+
+
+    /**
+     * Muestra u oculta los campos
+     * de seguimiento durante la edición.
+     */
+    _configurarEdicionSeguimiento() {
+
+      const select =
+        document.getElementById(
+          'editar-evento-seguimiento'
+        );
+
+      const contenedor =
+        document.getElementById(
+          'editar-campos-seguimiento'
+        );
+
+      const fecha =
+        document.getElementById(
+          'editar-evento-fecha'
+        );
+
+      if (!select || !contenedor) {
+        return;
+      }
+
+      const requiere =
+        select.value === 'Sí';
+
+      contenedor.hidden =
+        !requiere;
+
+      if (fecha) {
+        fecha.required =
+          requiere;
+      }
+    },
+
+
+    /**
+     * Guarda los cambios del evento.
+     */
+    guardarEdicion() {
+
+      if (!this.eventoEditando) {
+        return;
+      }
+
+      const comentario =
+        this._valor(
+          'editar-evento-comentario'
+        );
+
+      const resultadoEvento =
+        this._valor(
+          'editar-evento-resultado'
+        );
+
+      const seguimiento =
+        this._valor(
+          'editar-evento-seguimiento'
+        );
+
+      const fechaEvento =
+        this._valor(
+          'editar-evento-fecha'
+        );
+
+      const horaEvento =
+        this._valor(
+          'editar-evento-hora'
+        );
+
+      const motivoSeguimiento =
+        this._valor(
+          'editar-evento-motivo'
+        );
+
+      this._limpiarErroresEdicion();
+
+      let valido = true;
+
+
+      if (!comentario) {
+
+        this._errorEdicion(
+          'editar-error-comentario',
+          'El comentario es obligatorio.'
+        );
+
+        valido = false;
+      }
+
+
+      if (!resultadoEvento) {
+
+        this._errorEdicion(
+          'editar-error-resultado',
+          'El resultado del evento es obligatorio.'
+        );
+
+        valido = false;
+      }
+
+
+      if (
+        !seguimiento ||
+        (
+          seguimiento !== 'Sí' &&
+          seguimiento !== 'No'
+        )
+      ) {
+
+        valido = false;
+      }
+
+
+      if (
+        seguimiento === 'Sí' &&
+        !fechaEvento
+      ) {
+
+        this._errorEdicion(
+          'editar-error-fecha',
+          'La fecha del seguimiento es obligatoria.'
+        );
+
+        valido = false;
+      }
+
+
+      if (!valido) {
+        return;
+      }
+
+
+      const datos = {
+
+        idEvento:
+          this.eventoEditando.idEvento,
+
+        comentario:
+          comentario,
+
+        resultadoEvento:
+          resultadoEvento,
+
+        requiereSeguimiento:
+          seguimiento,
+
+        fechaEvento:
+          seguimiento === 'Sí'
+            ? fechaEvento
+            : '',
+
+        horaEvento:
+          seguimiento === 'Sí'
+            ? horaEvento
+            : '',
+
+        motivoSeguimiento:
+          seguimiento === 'Sí'
+            ? motivoSeguimiento
+            : ''
+      };
+
+
+      const boton =
+        document.getElementById(
+          'editar-evento-btn'
+        );
+
+      if (boton) {
+
+        boton.disabled =
+          true;
+
+        boton.textContent =
+          'Guardando...';
+      }
+
+
+      google.script.run
+        .withSuccessHandler(
+          this._actualizacionExitosa.bind(this)
+        )
+        .withFailureHandler(
+          this._actualizacionFallida.bind(this)
+        )
+        .apiActualizarEvento(datos);
+    },
+
+
+    /**
+     * Gestiona una actualización exitosa.
+     *
+     * @param {Object} evento
+     */
+    _actualizacionExitosa(evento) {
+
+      if (!evento) {
+        return;
+      }
+
+      this.eventoEditando =
+        null;
+
+      if (evento.idCliente) {
+
+        this.cargar(
+          evento.idCliente
+        );
+      }
+    },
+
+
+    /**
+     * Gestiona un error de actualización.
+     *
+     * @param {Error} error
+     */
+    _actualizacionFallida(error) {
+
+      const boton =
+        document.getElementById(
+          'editar-evento-btn'
+        );
+
+      if (boton) {
+
+        boton.disabled =
+          false;
+
+        boton.textContent =
+          'Guardar cambios';
+      }
+
+      const mensaje =
+        error && error.message
+          ? error.message
+          : 'No fue posible actualizar el evento.';
+
+      const elemento =
+        document.getElementById(
+          'editar-evento-mensaje'
+        );
+
+      if (elemento) {
+
+        elemento.className =
+          'mensaje mensaje-error';
+
+        elemento.textContent =
+          mensaje;
+
+        elemento.hidden =
+          false;
+      }
+    },
+
+
+    /**
+     * Cancela la edición.
+     */
+    cancelarEdicion() {
+
+      this.eventoEditando =
+        null;
+
+      this.mostrar(
+        this.eventos
+      );
+    },
+
+
+    /**
+     * Limpia errores de edición.
+     */
+    _limpiarErroresEdicion() {
+
+      document
+        .querySelectorAll(
+          '#historial-cliente .field-error'
+        )
+        .forEach(elemento => {
+
+          elemento.textContent =
+            '';
+
+          elemento.hidden =
+            true;
+        });
+    },
+
+
+    /**
+     * Muestra un error de edición.
+     *
+     * @param {string} id
+     * @param {string} mensaje
+     */
+    _errorEdicion(id, mensaje) {
+
+      const elemento =
+        document.getElementById(id);
+
+      if (!elemento) {
+        return;
+      }
+
+      elemento.textContent =
+        mensaje;
+
+      elemento.hidden =
+        false;
+    },
+
+
+    /**
+     * Obtiene el valor de un campo.
+     *
+     * @param {string} id
+     * @returns {string}
+     */
+    _valor(id) {
+
+      const elemento =
+        document.getElementById(id);
+
+      return elemento
+        ? elemento.value.trim()
+        : '';
+    },
+
+
+    /**
+     * Convierte una fecha dd/MM/yyyy
+     * a yyyy-MM-dd para input date.
+     *
+     * @param {*} valor
+     * @returns {string}
+     */
+    _convertirFechaInput(valor) {
+
+      if (!valor) {
+        return '';
+      }
+
+      const texto =
+        String(valor).trim();
+
+      const coincidencia =
+        texto.match(
+          /^(\d{2})\/(\d{2})\/(\d{4})$/
+        );
+
+      if (!coincidencia) {
+        return '';
+      }
+
+      return (
+        coincidencia[3] +
+        '-' +
+        coincidencia[2] +
+        '-' +
+        coincidencia[1]
+      );
+    },
+
+
+    /**
+     * Convierte una hora mostrada
+     * a formato HH:mm para input time.
+     *
+     * Acepta:
+     * - 2:51 p.m.
+     * - 2:51 pm
+     * - 14:51
+     * - 14:51:00
+     *
+     * @param {*} valor
+     * @returns {string}
+     */
+    _convertirHoraInput(valor) {
+
+      if (!valor) {
+        return '';
+      }
+
+      const texto =
+        String(valor)
+          .trim()
+          .toLowerCase();
+
+
+      let coincidencia =
+        texto.match(
+          /^(\d{1,2}):(\d{2})\s*(a\.m\.|p\.m\.|am|pm)$/
+        );
+
+
+      if (coincidencia) {
+
+        let horas =
+          Number(
+            coincidencia[1]
+          );
+
+        const minutos =
+          Number(
+            coincidencia[2]
+          );
+
+        const periodo =
+          coincidencia[3];
+
+
+        if (
+          horas >= 1 &&
+          horas <= 12 &&
+          minutos >= 0 &&
+          minutos <= 59
+        ) {
+
+          if (
+            periodo === 'p.m.' ||
+            periodo === 'pm'
+          ) {
+
+            if (horas !== 12) {
+              horas += 12;
+            }
+
+          } else {
+
+            if (horas === 12) {
+              horas = 0;
+            }
+          }
+
+
+          return (
+            String(horas)
+              .padStart(2, '0') +
+            ':' +
+            String(minutos)
+              .padStart(2, '0')
+          );
+        }
+      }
+
+
+      coincidencia =
+        texto.match(
+          /^(\d{1,2}):(\d{2})(?::\d{2})?$/
+        );
+
+
+      if (coincidencia) {
+
+        const horas =
+          Number(
+            coincidencia[1]
+          );
+
+        const minutos =
+          Number(
+            coincidencia[2]
+          );
+
+
+        if (
+          horas >= 0 &&
+          horas <= 23 &&
+          minutos >= 0 &&
+          minutos <= 59
+        ) {
+
+          return (
+            String(horas)
+              .padStart(2, '0') +
+            ':' +
+            String(minutos)
+              .padStart(2, '0')
+          );
+        }
+      }
+
+
+      return '';
+    },
+
+
+    /**
+     * Formatea una fecha para mostrar.
+     *
+     * El backend entrega normalmente:
+     * dd/MM/yyyy
+     *
+     * Resultado:
+     * dd/MM/yyyy
+     *
+     * @param {*} valor
+     * @returns {string}
+     */
+    _formatearFecha(valor) {
+
+      if (!valor) {
+        return '';
+      }
+
+
+      /*
+       * Si ya viene como dd/MM/yyyy,
+       * NO usamos new Date(), porque JavaScript
+       * puede interpretar la fecha como MM/dd/yyyy.
+       */
+      const texto =
+        String(valor).trim();
+
+
+      const coincidencia =
+        texto.match(
+          /^(\d{2})\/(\d{2})\/(\d{4})$/
+        );
+
+
+      if (coincidencia) {
+
+        return (
+          coincidencia[1] +
+          '/' +
+          coincidencia[2] +
+          '/' +
+          coincidencia[3]
+        );
+      }
+
+
+      /*
+       * Compatibilidad por si algún día
+       * el backend entrega un objeto Date
+       * o una fecha ISO.
+       */
+      if (
+        Object.prototype.toString.call(
+          valor
+        ) ===
+        '[object Date]'
+      ) {
+
+        if (
+          isNaN(
+            valor.getTime()
+          )
+        ) {
+          return '';
+        }
+
+        return valor.toLocaleDateString(
+          'es-CO',
+          {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          }
+        );
+      }
+
+
+      const fecha =
+        new Date(valor);
+
+
+      if (
+        isNaN(
+          fecha.getTime()
+        )
+      ) {
+
+        return FrontendUtils.escaparHtml(
+          texto
+        );
+      }
+
+
+      return fecha.toLocaleDateString(
+        'es-CO',
+        {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        }
+      );
+    },
+
+
+    /**
+     * Formatea una hora para mostrar.
+     *
+     * Resultado:
+     * h:mm a.m. / p.m.
+     *
+     * Acepta:
+     * - 2:51 p.m.
+     * - 2:51 pm
+     * - 14:51
+     * - 14:51:00
+     * - Date
+     *
+     * @param {*} valor
+     * @returns {string}
+     */
+    _formatearHora(valor) {
+
+      if (!valor) {
+        return '';
+      }
+
+
+      /*
+       * Si ya viene como "2:51 p.m."
+       * lo dejamos en el formato correcto.
+       */
+      const texto =
+        String(valor)
+          .trim()
+          .toLowerCase();
+
+
+      let coincidencia =
+        texto.match(
+          /^(\d{1,2}):(\d{2})\s*(a\.m\.|p\.m\.|am|pm)$/
+        );
+
+
+      if (coincidencia) {
+
+        const horas =
+          Number(
+            coincidencia[1]
+          );
+
+        const minutos =
+          Number(
+            coincidencia[2]
+          );
+
+        const periodo =
+          coincidencia[3];
+
+
+        if (
+          horas >= 1 &&
+          horas <= 12 &&
+          minutos >= 0 &&
+          minutos <= 59
+        ) {
+
+          return (
+            horas +
+            ':' +
+            String(minutos)
+              .padStart(2, '0') +
+            (
+              periodo === 'p.m.' ||
+              periodo === 'pm'
+                ? ' p.m.'
+                : ' a.m.'
+            )
+          );
+        }
+      }
+
+
+      /*
+       * Si Apps Script entrega un Date,
+       * usamos solamente hora y minutos.
+       *
+       * No mostramos nunca la fecha asociada
+       * al Date para evitar el problema de 1899.
+       */
+      if (
+        Object.prototype.toString.call(
+          valor
+        ) ===
+        '[object Date]'
+      ) {
+
+        if (
+          isNaN(
+            valor.getTime()
+          )
+        ) {
+          return '';
+        }
+
+        return valor
+          .toLocaleTimeString(
+            'es-CO',
+            {
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true
+            }
+          )
+          .replace(
+            'a. m.',
+            'a.m.'
+          )
+          .replace(
+            'p. m.',
+            'p.m.'
+          );
+      }
+
+
+      /*
+       * Acepta también HH:mm o HH:mm:ss.
+       */
+      coincidencia =
+        texto.match(
+          /^(\d{1,2}):(\d{2})(?::\d{2})?$/
+        );
+
+
+      if (coincidencia) {
+
+        const horas =
+          Number(
+            coincidencia[1]
+          );
+
+        const minutos =
+          Number(
+            coincidencia[2]
+          );
+
+
+        if (
+          horas >= 0 &&
+          horas <= 23 &&
+          minutos >= 0 &&
+          minutos <= 59
+        ) {
+
+          let hora12 =
+            horas % 12;
+
+          if (hora12 === 0) {
+            hora12 = 12;
+          }
+
+          const periodo =
+            horas >= 12
+              ? 'p.m.'
+              : 'a.m.';
+
+
+          return (
+            hora12 +
+            ':' +
+            String(minutos)
+              .padStart(2, '0') +
+            ' ' +
+            periodo
+          );
+        }
+      }
+
+
+      return FrontendUtils.escaparHtml(
+        texto
+      );
+    }
+
+  };
+
+</script>

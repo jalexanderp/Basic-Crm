@@ -1,0 +1,174 @@
+<!--
+  ARCHIVO: Index.html
+
+  Punto de entrada del frontend del CRM.
+
+  Responsabilidad:
+  - Servir como documento raíz.
+  - Definir la estructura general de las vistas.
+  - Incluir los módulos frontend.
+
+  No debe contener:
+  - lógica de negocio.
+  - formularios completos.
+  - lógica de navegación.
+  - grandes bloques de JavaScript.
+-->
+
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+  <base target="_top">
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>CRM</title>
+
+  <?!= include('CSS'); ?>
+
+</head>
+
+<body>
+
+  <div id="app">
+
+    <header id="app-header">
+      <h1>CRM</h1>
+    </header>
+
+
+    <main id="app-content">
+
+      <!-- ======================================================
+           VISTA: CLIENTES
+           ====================================================== -->
+
+      <section
+        id="vista-clientes"
+        hidden
+      >
+
+        <div
+          style="
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:12px;
+            margin-bottom:16px;
+          "
+        >
+
+          <h2 style="margin:0;">
+            Clientes
+          </h2>
+
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick="ClienteFormularioUI.mostrar()"
+          >
+            ＋ Nuevo
+          </button>
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label
+            class="form-label"
+            for="buscar-clientes"
+          >
+            Buscar
+          </label>
+
+          <input
+            type="search"
+            id="buscar-clientes"
+            placeholder="Nombre o celular"
+            autocomplete="off"
+            oninput="ClienteListaUI.filtrar()"
+          >
+
+        </div>
+
+
+        <div id="lista-clientes">
+
+          <div class="loading">
+            Cargando clientes...
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ======================================================
+           VISTA: NUEVO CLIENTE
+           ====================================================== -->
+
+      <section
+        id="vista-nuevoCliente"
+        hidden
+      >
+      </section>
+
+
+      <!-- ======================================================
+           VISTA: FICHA
+           ====================================================== -->
+
+      <section
+        id="vista-ficha"
+        hidden
+      >
+      </section>
+
+
+      <!-- ======================================================
+           VISTA: NUEVO EVENTO
+           ====================================================== -->
+
+      <section
+        id="vista-nuevoEvento"
+        hidden
+      >
+      </section>
+
+    </main>
+
+  </div>
+
+
+  <!-- ==========================================================
+       MÓDULOS FRONTEND
+       ========================================================== -->
+
+  <?!= include('FrontendUtils'); ?>
+
+  <?!= include('NavegacionUI'); ?>
+
+  <?!= include('ClienteListaUI'); ?>
+
+  <?!= include('ClienteFormularioUI'); ?>
+
+  <?!= include('ClienteFichaUI'); ?>
+
+  <?!= include('EventoFormularioUI'); ?>
+
+  <?!= include('EventoHistorialUI'); ?>
+
+  <?!= include('AppUI'); ?>
+
+
+</body>
+
+</html>
