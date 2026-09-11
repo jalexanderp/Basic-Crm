@@ -107,24 +107,21 @@
       return `
         <div class="card">
 
-          <div
-            style="
-              display: flex;
-              align-items: center;
-              gap: 12px;
-              margin-bottom: 20px;
-            "
-          >
+          <div class="vista-header">
 
-            <button
-              type="button"
-              class="btn btn-secondary"
-              onclick="ClienteFormularioUI.cancelar()"
-            >
-              ← Volver
-            </button>
+            <div class="acciones">
 
-            <h2 style="margin: 0;">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                onclick="ClienteFormularioUI.cancelar()"
+              >
+                ← Volver
+              </button>
+
+            </div>
+
+            <h2 class="vista-title">
               ${titulo}
             </h2>
 
@@ -138,229 +135,244 @@
 
             <h3>Datos principales</h3>
 
-            <div class="form-group">
+            <div class="grid-form">
 
-              <label
-                class="form-label"
-                for="cliente-primer-nombre"
-              >
-                Primer nombre
-                <span class="form-required">*</span>
-              </label>
+              <div class="form-group">
 
-              <input
-                type="text"
-                id="cliente-primer-nombre"
-                name="primerNombre"
-                autocomplete="given-name"
-                required
-              >
+                <label
+                  class="form-label"
+                  for="cliente-primer-nombre"
+                >
+                  Primer nombre
+                  <span class="form-required">*</span>
+                </label>
 
-              <div
-                id="error-primer-nombre"
-                class="field-error"
-                hidden
-              ></div>
+                <input
+                  type="text"
+                  id="cliente-primer-nombre"
+                  name="primerNombre"
+                  autocomplete="given-name"
+                  required
+                >
+
+                <div
+                  id="error-primer-nombre"
+                  class="field-error"
+                  hidden
+                ></div>
+
+              </div>
+
+              <div class="form-group">
+
+                <label
+                  class="form-label"
+                  for="cliente-nombre-completo"
+                >
+                  Nombre completo
+                  <span class="form-required">*</span>
+                </label>
+
+                <input
+                  type="text"
+                  id="cliente-nombre-completo"
+                  name="nombreCompleto"
+                  autocomplete="name"
+                  required
+                >
+
+                <div
+                  id="error-nombre-completo"
+                  class="field-error"
+                  hidden
+                ></div>
+
+              </div>
+
+              <div class="form-group">
+
+                <label
+                  class="form-label"
+                  for="cliente-celular"
+                >
+                  Celular
+                  <span class="form-required">*</span>
+                </label>
+
+                <input
+                  type="tel"
+                  id="cliente-celular"
+                  name="celular"
+                  autocomplete="tel"
+                  required
+                >
+
+                <div
+                  id="error-celular"
+                  class="field-error"
+                  hidden
+                ></div>
+
+              </div>
+
+              <div class="form-group">
+
+                <label
+                  class="form-label"
+                  for="cliente-email"
+                >
+                  Email
+                </label>
+
+                <input
+                  type="email"
+                  id="cliente-email"
+                  name="email"
+                  autocomplete="email"
+                >
+
+              </div>
 
             </div>
 
-            <div class="form-group">
-
-              <label
-                class="form-label"
-                for="cliente-nombre-completo"
-              >
-                Nombre completo
-                <span class="form-required">*</span>
-              </label>
-
-              <input
-                type="text"
-                id="cliente-nombre-completo"
-                name="nombreCompleto"
-                autocomplete="name"
-                required
-              >
-
-              <div
-                id="error-nombre-completo"
-                class="field-error"
-                hidden
-              ></div>
-
-            </div>
-
-            <div class="form-group">
-
-              <label
-                class="form-label"
-                for="cliente-celular"
-              >
-                Celular
-                <span class="form-required">*</span>
-              </label>
-
-              <input
-                type="tel"
-                id="cliente-celular"
-                name="celular"
-                autocomplete="tel"
-                required
-              >
-
-              <div
-                id="error-celular"
-                class="field-error"
-                hidden
-              ></div>
-
-            </div>
-
-            <div class="form-group">
-
-              <label
-                class="form-label"
-                for="cliente-email"
-              >
-                Email
-              </label>
-
-              <input
-                type="email"
-                id="cliente-email"
-                name="email"
-                autocomplete="email"
-              >
-
-            </div>
 
             <h3>Vehículo</h3>
 
-            <div class="form-group">
+            <div class="grid-form">
 
-              <label
-                class="form-label"
-                for="cliente-primer-vehiculo-interes"
-              >
-                Vehículo de mayor interés
-                <span class="form-required">*</span>
-              </label>
+              <div class="form-group">
 
-              <input
-                type="text"
-                id="cliente-primer-vehiculo-interes"
-                name="primerVehiculoInteres"
-                required
-              >
+                <label
+                  class="form-label"
+                  for="cliente-primer-vehiculo-interes"
+                >
+                  Vehículo de mayor interés
+                  <span class="form-required">*</span>
+                </label>
 
-              <div
-                id="error-primer-vehiculo-interes"
-                class="field-error"
-                hidden
-              ></div>
+                <input
+                  type="text"
+                  id="cliente-primer-vehiculo-interes"
+                  name="primerVehiculoInteres"
+                  required
+                >
+
+                <div
+                  id="error-primer-vehiculo-interes"
+                  class="field-error"
+                  hidden
+                ></div>
+
+              </div>
+
+              <div class="form-group">
+
+                <label
+                  class="form-label"
+                  for="cliente-segundo-vehiculo-interes"
+                >
+                  Segundo vehículo de interés
+                </label>
+
+                <input
+                  type="text"
+                  id="cliente-segundo-vehiculo-interes"
+                  name="segundoVehiculoInteres"
+                >
+
+              </div>
 
             </div>
 
-            <div class="form-group">
-
-              <label
-                class="form-label"
-                for="cliente-segundo-vehiculo-interes"
-              >
-                Segundo vehículo de interés
-              </label>
-
-              <input
-                type="text"
-                id="cliente-segundo-vehiculo-interes"
-                name="segundoVehiculoInteres"
-              >
-
-            </div>
 
             <h3>Retoma</h3>
 
-            <div class="form-group">
+            <div class="grid-form">
 
-              <label
-                class="form-label"
-                for="cliente-primer-vehiculo-retoma"
-              >
-                Primer vehículo
-              </label>
+              <div class="form-group">
 
-              <input
-                type="text"
-                id="cliente-primer-vehiculo-retoma"
-                name="primerVehiculoRetoma"
-              >
+                <label
+                  class="form-label"
+                  for="cliente-primer-vehiculo-retoma"
+                >
+                  Primer vehículo
+                </label>
+
+                <input
+                  type="text"
+                  id="cliente-primer-vehiculo-retoma"
+                  name="primerVehiculoRetoma"
+                >
+
+              </div>
+
+              <div class="form-group">
+
+                <label
+                  class="form-label"
+                  for="cliente-segundo-vehiculo-retoma"
+                >
+                  Segundo vehículo
+                </label>
+
+                <input
+                  type="text"
+                  id="cliente-segundo-vehiculo-retoma"
+                  name="segundoVehiculoRetoma"
+                >
+
+              </div>
 
             </div>
 
-            <div class="form-group">
-
-              <label
-                class="form-label"
-                for="cliente-segundo-vehiculo-retoma"
-              >
-                Segundo vehículo
-              </label>
-
-              <input
-                type="text"
-                id="cliente-segundo-vehiculo-retoma"
-                name="segundoVehiculoRetoma"
-              >
-
-            </div>
 
             <h3>Información adicional</h3>
 
-            <div class="form-group">
+            <div class="grid-form">
 
-              <label
-                class="form-label"
-                for="cliente-fecha-nacimiento"
-              >
-                Fecha de nacimiento
-              </label>
+              <div class="form-group">
 
-              <input
-                type="date"
-                id="cliente-fecha-nacimiento"
-                name="fechaNacimiento"
-              >
+                <label
+                  class="form-label"
+                  for="cliente-fecha-nacimiento"
+                >
+                  Fecha de nacimiento
+                </label>
+
+                <input
+                  type="date"
+                  id="cliente-fecha-nacimiento"
+                  name="fechaNacimiento"
+                >
+
+              </div>
+
+              <div class="form-group full-width">
+
+                <label
+                  class="form-label"
+                  for="cliente-info-adicional"
+                >
+                  Información adicional
+                </label>
+
+                <textarea
+                  id="cliente-info-adicional"
+                  name="infoAdicional"
+                ></textarea>
+
+              </div>
 
             </div>
 
-            <div class="form-group">
-
-              <label
-                class="form-label"
-                for="cliente-info-adicional"
-              >
-                Información adicional
-              </label>
-
-              <textarea
-                id="cliente-info-adicional"
-                name="infoAdicional"
-              ></textarea>
-
-            </div>
 
             <div
               id="cliente-formulario-mensaje"
               hidden
             ></div>
 
-            <div
-              style="
-                display: flex;
-                gap: 10px;
-                flex-wrap: wrap;
-              "
-            >
+
+            <div class="acciones">
 
               <button
                 type="button"
@@ -732,21 +744,11 @@
         return;
       }
 
-      /*
-       * EDICIÓN
-       */
       if (this.modo === 'editar') {
 
         this.clienteEditando =
           cliente;
 
-        /*
-         * Actualizamos la copia que conserva
-         * ClienteListaUI, si ese cliente ya fue
-         * cargado en la lista.
-         *
-         * No hacemos una nueva llamada al backend.
-         */
         ClienteListaUI.actualizarCliente(
           cliente
         );
@@ -764,21 +766,12 @@
         return;
       }
 
-      /*
-       * CREACIÓN
-       */
       this._restaurarBoton();
 
       NavegacionUI.mostrar(
         'clientes'
       );
 
-      /*
-       * Una creación agrega un nuevo registro
-       * al final de Sheets. Recargamos la primera
-       * página para que el nuevo cliente aparezca
-       * inmediatamente entre los más recientes.
-       */
       ClienteListaUI.cargar();
     },
 
