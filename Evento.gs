@@ -43,22 +43,13 @@ const Evento = {
 
 
   /**
-   * Crea un nuevo evento CRM.
-   *
-   * Si requiere seguimiento:
-   * - valida fecha y hora;
-   * - verifica disponibilidad;
-   * - crea la cita en Calendar;
-   * - guarda su ID.
-   *
-   * Si NO requiere seguimiento:
-   * - solo guarda el evento en EVENTOS;
-   * - no crea nada en Calendar.
+   * Crea un evento automático con duración de 1 minuto y sin recordatorio.
+   * Esta función se usa para eventos automáticos que deben ser rápidos.
    *
    * @param {Object} datos
    * @returns {Object}
    */
-  crear(datos) {
+  crearEventoRapido(datos) {
 
     this._validarDatos(datos);
 
@@ -101,10 +92,6 @@ const Evento = {
           datos.requiereSeguimiento
         );
 
-      /*
-       * Solo convertimos fecha y hora
-       * cuando existe seguimiento.
-       */
       const fechaEvento =
         seguimiento === 'Sí'
           ? this._convertirFecha(
@@ -121,14 +108,7 @@ const Evento = {
 
       let fechaNotificacion = '';
 
-      /*
-       * Solo existe fecha de notificación
-       * cuando se crea un seguimiento.
-       */
-      if (
-        seguimiento === 'Sí'
-      ) {
-
+      if (seguimiento === 'Sí') {
         fechaNotificacion =
           this._calcularFechaNotificacion(
             fechaEvento,
@@ -143,53 +123,24 @@ const Evento = {
           'h:mm a'
         );
 
-      /*
-       * ID de Calendar vacío por defecto.
-       */
       let datosCalendar = null;
 
-      /*
-       * CALENDAR
-       *
-       * Solo se crea una cita cuando el evento
-       * requiere seguimiento.
-       */
-      if (
-        seguimiento === 'Sí'
-      ) {
+      if (seguimiento === 'Sí') {
 
         datosCalendar = {
-
-          idEvento:
-            idEvento,
-
-          idCliente:
-            cliente.idCliente,
-
-          nombreCliente:
-            cliente.nombreCompleto,
-
-          tipoEvento:
-            datos.tipoEvento,
-
-          comentario:
-            datos.comentario,
-
-          resultadoEvento:
-            datos.resultadoEvento,
-
-          motivoSeguimiento:
-            datos.motivoSeguimiento,
-
-          fechaEvento:
-            datos.fechaEvento,
-
-          horaEvento:
-            datos.horaEvento
+          idEvento: idEvento,
+          idCliente: cliente.idCliente,
+          nombreCliente: cliente.nombreCompleto,
+          tipoEvento: datos.tipoEvento,
+          comentario: datos.comentario,
+          resultadoEvento: datos.resultadoEvento,
+          motivoSeguimiento: datos.motivoSeguimiento,
+          fechaEvento: datos.fechaEvento,
+          horaEvento: datos.horaEvento
         };
 
         const eventoCalendar =
-          CalendarTrabajo.crearEvento(
+          CalendarTrabajo.crearEventoRapido(
             datosCalendar
           );
 
@@ -197,90 +148,40 @@ const Evento = {
           eventoCalendar.id;
       }
 
-      /*
-       * Construimos la fila de EVENTOS.
-       */
       const fila = [
-
         idEvento,
-
         cliente.idCliente,
-
         ahora,
-
         horaRegistro,
-
         cliente.nombreCompleto,
-
-        this._texto(
-          datos.tipoEvento
-        ),
-
-        this._texto(
-          datos.comentario
-        ),
-
+        this._texto(datos.tipoEvento),
+        this._texto(datos.comentario),
         seguimiento,
-
         fechaEvento,
-
         horaEvento,
-
         fechaNotificacion,
-
-        this._texto(
-          datos.resultadoEvento
-        ),
-
-        seguimiento === 'Sí'
-          ? this._texto(
-              datos.motivoSeguimiento
-            )
-          : '',
-
+        this._texto(datos.resultadoEvento),
+        seguimiento === 'Sí' ? this._texto(datos.motivoSeguimiento) : '',
         idEventoCalendar
       ];
 
-      /*
-       * Guardamos el evento CRM.
-       */
-      hoja.appendRow(
-        fila
-      );
+      hoja.appendRow(fila);
 
-      return this._formatearEvento(
-        fila
-      );
+      return this._formatearEvento(fila);
 
     } catch (error) {
-
-      /*
-       * Si Calendar fue creado pero falló
-       * el guardado en Sheets, intentamos
-       * eliminar el evento para no dejar
-       * compromisos huérfanos.
-       */
       if (idEventoCalendar) {
-
         try {
-
-          CalendarTrabajo.eliminarEvento(
-            idEventoCalendar
-          );
-
+          CalendarTrabajo.eliminarEvento(idEventoCalendar);
         } catch (errorCalendar) {
-
           console.error(
             'No fue posible revertir el evento de Calendar: ' +
             errorCalendar.message
           );
         }
       }
-
       throw error;
-
     } finally {
-
       lock.releaseLock();
     }
   },
@@ -1188,6 +1089,494 @@ const Evento = {
     )
       .replace('AM', 'a.m.')
       .replace('PM', 'p.m.');
+  },
+
+  /**
+   * Crea un evento automático de seguimiento inicial.
+   *
+   * Se crea n días después de la fecha de registro del cliente.
+   * Duración: 1 minuto, sin recordatorio.
+   *
+   * @param {Object} cliente
+   */
+  crearSeguimientoInicial(cliente) {
+
+    const diasSeguimiento =
+      Config.obtenerParametro('Seguimiento Inicial', 10);
+
+    if (!diasSeguimiento || diasSeguimiento <= 0) {
+      return;
+    }
+
+    // Calcular fecha del evento (a las 7:00 AM)
+    const fechaRegistro = this._convertirFecha(cliente.fechaRegistro);
+    const fechaEvento = new Date(
+      fechaRegistro.getTime() +
+      diasSeguimiento * 24 * 60 * 60 * 1000
+    );
+    fechaEvento.setHours(7, 0, 0, 0);
+
+    const datos = {
+      idCliente: cliente.idCliente,
+      tipoEvento: 'Seguimiento Inicial',
+      comentario: 'Llamada de 5 minutos para verificar si el cliente continúa con interés sobre el negocio.',
+      requiereSeguimiento: 'Sí',
+      resultadoEvento: 'Pendiente',
+      fechaEvento: Utilities.formatDate(
+        fechaEvento,
+        Session.getScriptTimeZone(),
+        'yyyy-MM-dd'
+      ),
+      horaEvento: '07:00',
+      motivoSeguimiento: 'Seguimiento inicial automático.'
+    };
+
+    // Crear el evento rápido (1 minuto, sin recordatorio)
+    const evento = this.crearEventoRapido(datos);
+  },
+
+  /**
+   * Crea un evento automático de cumpleaños.
+   *
+   * Duración: 1 minuto, sin recordatorio.
+   *
+   * @param {Object} cliente
+   */
+  crearEventoCumpleanos(cliente) {
+
+    if (!cliente.fechaNacimiento) {
+      return;
+    }
+
+    // Obtener el día y mes de nacimiento (ignoramos el año de nacimiento).
+    // Extraemos día/mes directamente del texto para evitar cualquier
+    // conversión de zona horaria.
+    const dm = this._extraerDiaMes(cliente.fechaNacimiento);
+
+    if (!dm) {
+      return;
+    }
+
+    const mesNacimiento = dm.mes;   // 1-12
+    const diaNacimiento = dm.dia;   // 1-31
+
+    // Año actual y día/mes de hoy (números, sin objetos Date).
+    const ahora = new Date();
+    const anioActual = ahora.getFullYear();
+    const mesHoy = ahora.getMonth() + 1;
+    const diaHoy = ahora.getDate();
+
+    // Determinar el año del próximo cumpleaños.
+    // Si el cumpleaños de este año ya pasó (mes/día anterior a hoy),
+    // usamos el próximo año. Si es hoy o futuro, se mantiene este año.
+    let anioEvento = anioActual;
+    const yaPaso =
+      (mesNacimiento < mesHoy) ||
+      (mesNacimiento === mesHoy && diaNacimiento < diaHoy);
+
+    if (yaPaso) {
+      anioEvento = anioActual + 1;
+    }
+
+    // Construimos la fecha del evento como texto YYYY-MM-DD directamente,
+    // sin usar objetos Date ni Utilities.formatDate, para que NO haya
+    // ningún desfase de zona horaria.
+    const fechaEventoTexto =
+      anioEvento + '-' +
+      String(mesNacimiento).padStart(2, '0') + '-' +
+      String(diaNacimiento).padStart(2, '0');
+
+    // Leer la plantilla desde CONFIGURACION, reemplazar variables y
+    // generar el link de WhatsApp con el texto correctamente codificado.
+    const resultado = Utils.construirMensajeWhatsApp(
+      'Mensaje de cumpleaños',
+      cliente,
+      'Hola {PRIMER_NOMBRE}, ¡feliz cumpleaños! Te deseo un excelente día.'
+    );
+
+    const mensajePersonalizado = resultado.mensaje;
+    const linkWhatsApp = resultado.linkWhatsApp;
+
+    const datos = {
+      idCliente: cliente.idCliente,
+      tipoEvento: 'Cumpleaños',
+      comentario: mensajePersonalizado + '\n\nEnviar por WhatsApp: ' + linkWhatsApp,
+      requiereSeguimiento: 'Sí',
+      resultadoEvento: 'Pendiente',
+      fechaEvento: fechaEventoTexto,
+      horaEvento: '07:00',
+      motivoSeguimiento: 'Evento automático de cumpleaños.'
+    };
+
+    // Crear el evento rápido (1 minuto, sin recordatorio)
+    const evento = this.crearEventoRapido(datos);
+  },
+
+  /**
+   * Extrae día y mes de una fecha, sin conversiones de zona horaria.
+   *
+   * Acepta:
+   * - Date (usa getDate/getMonth locales)
+   * - Cadena YYYY-MM-DD
+   * - Cadena DD/MM/YYYY
+   *
+   * @param {*} valor
+   * @returns {{dia: number, mes: number}|null}
+   */
+  _extraerDiaMes(valor) {
+
+    if (!valor) {
+      return null;
+    }
+
+    // Si es un objeto Date válido, usamos sus componentes locales.
+    if (
+      Object.prototype.toString.call(valor) === '[object Date]'
+    ) {
+      if (isNaN(valor.getTime())) {
+        return null;
+      }
+      return {
+        dia: valor.getDate(),
+        mes: valor.getMonth() + 1
+      };
+    }
+
+    const texto = String(valor).trim();
+
+    // Formato YYYY-MM-DD
+    let m = texto.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (m) {
+      return {
+        mes: Number(m[2]),
+        dia: Number(m[3])
+      };
+    }
+
+    // Formato DD/MM/YYYY
+    m = texto.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (m) {
+      return {
+        dia: Number(m[1]),
+        mes: Number(m[2])
+      };
+    }
+
+    return null;
+  },
+
+  /**
+   * Actualiza el evento automático de cumpleaños cuando cambia la fecha de nacimiento.
+   *
+   * @param {Object} cliente
+   */
+  actualizarEventoCumpleanos(cliente) {
+
+    if (!cliente.fechaNacimiento) {
+      return;
+    }
+
+    // Obtener evento de cumpleaños existente
+    const eventos =
+      this.obtenerPorCliente(cliente.idCliente);
+
+    const eventoCumpleanos = eventos.find(
+      evento =>
+        evento.tipoEvento === 'Cumpleaños' || evento.tipoEvento === 'Mensaje de cumpleaños'
+    );
+
+    if (eventoCumpleanos) {
+      // Eliminar evento existente y crear uno nuevo con el tipo correcto
+      this.eliminarEventoPorId(eventoCumpleanos.idEvento);
+      this.crearEventoCumpleanos(cliente);
+    }
+  },
+
+  /**
+   * Elimina un evento por su ID.
+   *
+   * @param {string} idEvento
+   */
+  eliminarEventoPorId(idEvento) {
+
+    if (!idEvento) {
+      return;
+    }
+
+    const hoja =
+      Spreadsheet.obtenerHoja(this.NOMBRE_HOJA);
+
+    const ultimaFila =
+      hoja.getLastRow();
+
+    if (ultimaFila < 2) {
+      return;
+    }
+
+    const valores =
+      hoja
+        .getRange(
+          2,
+          1,
+          ultimaFila - 1,
+          this.COLUMNAS.EVENTO_CALENDAR + 1
+        )
+        .getValues();
+
+    for (let i = valores.length - 1; i >= 0; i--) {
+      if (String(valores[i][0] || '') === idEvento) {
+        hoja.deleteRow(i + 2);
+        break;
+      }
+    }
+  },
+
+  /**
+   * Actualiza los eventos postventa automáticamente.
+   *
+   * Duración: 1 minuto, sin recordatorio.
+   *
+   * @param {Object} cliente
+   */
+  actualizarEventosPostventa(cliente) {
+
+    if (!cliente.fechaRegistro) {
+      return;
+    }
+
+    const fechaRegistro = this._convertirFecha(cliente.fechaRegistro);
+
+    // Obtener meses desde la configuración
+    const meses3 =
+      Config.obtenerParametro('Seguimiento postventa 1', 3);
+    const meses6 =
+      Config.obtenerParametro('Seguimiento postventa 2', 6);
+    const meses12 =
+      Config.obtenerParametro('Seguimiento postventa 3', 12);
+
+    // Actualizar evento de 3 meses
+    this._actualizarOCrearEventoPostventa(
+      cliente,
+      fechaRegistro,
+      meses3,
+      'Seguimiento Postventa 3 Meses',
+      'Mensaje seguimiento 3 meses',
+      'Hola {PRIMER_NOMBRE}, ¿cómo estás? Quería saber cómo te ha ido con tu vehículo.'
+    );
+
+    // Actualizar evento de 6 meses
+    this._actualizarOCrearEventoPostventa(
+      cliente,
+      fechaRegistro,
+      meses6,
+      'Seguimiento Postventa 6 Meses',
+      'Mensaje seguimiento 6 meses',
+      'Hola {PRIMER_NOMBRE}, ¿cómo estás? Ya han pasado varios meses desde que estrenaste tu vehículo.'
+    );
+
+    // Actualizar evento de 12 meses
+    this._actualizarOCrearEventoPostventa(
+      cliente,
+      fechaRegistro,
+      meses12,
+      'Seguimiento Postventa 12 Meses',
+      'Mensaje seguimiento 12 meses',
+      'Hola {PRIMER_NOMBRE}, ¿cómo estás? ¡Ya llevamos un año desde que adquiriste tu vehículo!'
+    );
+  },
+
+  /**
+   * Actualiza o crea un evento postventa.
+   *
+   * @param {Object} cliente
+   * @param {Date} fechaRegistro
+   * @param {number} meses
+   * @param {string} tipoEvento Nombre del tipo de evento (para EVENTOS).
+   * @param {string} nombreParametroMensaje Nombre del parámetro en CONFIGURACION.
+   * @param {string} mensajePorDefecto Texto a usar si el parámetro no existe.
+   */
+  _actualizarOCrearEventoPostventa(
+    cliente,
+    fechaRegistro,
+    meses,
+    tipoEvento,
+    nombreParametroMensaje,
+    mensajePorDefecto
+  ) {
+
+    if (!meses || meses <= 0) {
+      return;
+    }
+
+    // Calcular la fecha del evento (a las 7:00 AM) a partir de la fecha
+    // de registro más los meses indicados. Formateamos como texto
+    // YYYY-MM-DD manualmente para evitar desfases de zona horaria.
+    const base = new Date(fechaRegistro.getTime());
+    base.setMonth(base.getMonth() + meses);
+
+    const fechaEventoTexto =
+      base.getFullYear() + '-' +
+      String(base.getMonth() + 1).padStart(2, '0') + '-' +
+      String(base.getDate()).padStart(2, '0');
+
+    // Leer la plantilla desde CONFIGURACION, reemplazar variables y
+    // generar el link de WhatsApp con el texto correctamente codificado.
+    const resultado = Utils.construirMensajeWhatsApp(
+      nombreParametroMensaje,
+      cliente,
+      mensajePorDefecto
+    );
+
+    const comentario =
+      resultado.mensaje + '\n\nEnviar por WhatsApp: ' + resultado.linkWhatsApp;
+
+    // Verificar si ya existe un evento de este tipo para el cliente.
+    const eventos =
+      this.obtenerPorCliente(cliente.idCliente);
+
+    const eventoExistente = eventos.find(
+      evento => evento.tipoEvento === tipoEvento
+    );
+
+    if (eventoExistente) {
+      // Actualizar el evento existente.
+      this.actualizar({
+        idEvento: eventoExistente.idEvento,
+        comentario: comentario,
+        requiereSeguimiento: 'Sí',
+        resultadoEvento: 'Pendiente',
+        fechaEvento: fechaEventoTexto,
+        horaEvento: '07:00',
+        motivoSeguimiento: tipoEvento + ' automático.'
+      });
+    } else {
+      // Crear un evento nuevo (1 minuto, sin recordatorio).
+      this.crearEventoRapido({
+        idCliente: cliente.idCliente,
+        tipoEvento: tipoEvento,
+        comentario: comentario,
+        requiereSeguimiento: 'Sí',
+        resultadoEvento: 'Pendiente',
+        fechaEvento: fechaEventoTexto,
+        horaEvento: '07:00',
+        motivoSeguimiento: tipoEvento + ' automático.'
+      });
+    }
+  },
+
+  /**
+   * Actualiza un evento de Calendar para eliminar el recordatorio.
+   *
+   * @param {string} idEventoCalendar
+   */
+  _actualizarSinRecordatorio(idEventoCalendar) {
+
+    try {
+      const calendario =
+        CalendarTrabajo._obtenerCalendario();
+
+      const evento =
+        calendario.getEventById(idEventoCalendar);
+
+      if (evento) {
+        // Eliminar todos los recordatorios
+        evento.removeAllReminders();
+      }
+    } catch (e) {
+      console.error(
+        'Error al actualizar recordatorio de Calendar: ' +
+        e.message
+      );
+    }
+  },
+
+  /**
+   * Actualiza la fecha de un evento existente.
+   *
+   * @param {string} idEvento
+   * @param {Date} fechaNacimiento
+   */
+  _actualizarFechaEvento(idEvento, fechaNacimiento) {
+
+    if (!idEvento || !fechaNacimiento) {
+      return;
+    }
+
+    try {
+      const eventos =
+        this.obtenerPorCliente('');
+      const hoja =
+        Spreadsheet.obtenerHoja(this.NOMBRE_HOJA);
+
+      const ultimaFila =
+        hoja.getLastRow();
+
+      if (ultimaFila < 2) {
+        return;
+      }
+
+      const valores =
+        hoja
+          .getRange(
+            2,
+            1,
+            ultimaFila - 1,
+            this.COLUMNAS.EVENTO_CALENDAR + 1
+          )
+          .getValues();
+
+      let numeroFila = -1;
+
+      for (let i = 0; i < valores.length; i++) {
+        if (
+          String(valores[i][0] || '') === idEvento
+        ) {
+          numeroFila = i + 2;
+          break;
+        }
+      }
+
+      if (numeroFila === -1) {
+        return;
+      }
+
+      // Calcular nueva fecha (a las 7:00 AM)
+      const fechaActual = new Date();
+      const fechaNac = this._convertirFecha(fechaNacimiento);
+      let fechaCumpleanos = new Date(
+        fechaActual.getFullYear(),
+        fechaNac.getMonth(),
+        fechaNac.getDate()
+      );
+
+      // Si ya pasó este año, usar el próximo
+      if (fechaCumpleanos < fechaActual) {
+        fechaCumpleanos.setFullYear(
+          fechaActual.getFullYear() + 1
+        );
+      }
+
+      const fechaEvento = new Date(fechaCumpleanos);
+      fechaEvento.setHours(7, 0, 0, 0);
+
+      hoja
+        .getRange(
+          numeroFila,
+          this.COLUMNAS.FECHA_EVENTO + 1
+        )
+        .setValue(
+          Utilities.formatDate(
+            fechaEvento,
+            Session.getScriptTimeZone(),
+            'yyyy-MM-dd'
+          )
+        );
+    } catch (e) {
+      console.error(
+        'Error al actualizar fecha de evento: ' +
+        e.message
+      );
+    }
   }
 
 };

@@ -289,7 +289,21 @@ const Cliente = {
 
       hoja.appendRow(fila);
 
-      return this._filaAObjeto(fila);
+      const clienteNuevo = this._filaAObjeto(fila);
+
+      // Generar evento de seguimiento inicial automáticamente
+      Evento.crearSeguimientoInicial(
+        clienteNuevo
+      );
+
+      // Si tiene fecha de nacimiento, generar evento de cumpleaños
+      if (clienteNuevo.fechaNacimiento) {
+        Evento.crearEventoCumpleanos(
+          clienteNuevo
+        );
+      }
+
+      return clienteNuevo;
 
     } finally {
 
@@ -432,14 +446,62 @@ const Cliente = {
           )
           .getValues()[0];
 
-      return this._filaAObjeto(
+      const clienteActualizado = this._filaAObjeto(
         filaActualizada
       );
+
+      // Actualizar eventos automáticos si hay cambios
+      this.actualizarEventosAutomaticos(clienteActualizado);
+
+      return clienteActualizado;
 
     } finally {
 
       lock.releaseLock();
     }
+  },
+
+  /**
+   * Actualiza los eventos automáticos cuando un cliente cambia.
+   *
+   * @param {Object} cliente
+   */
+  actualizarEventosAutomaticos(cliente) {
+
+    // Si cambió la fecha de nacimiento, actualizar evento de cumpleaños
+    if (cliente.fechaNacimiento) {
+      Evento.actualizarEventoCumpleanos(cliente);
+    }
+
+    // Actualizar eventos postventa si la fecha de registro cambió
+    // (aunque normalmente no debería cambiar, por seguridad)
+    if (cliente.fechaRegistro) {
+      Evento.actualizarEventosPostventa(cliente);
+    }
+  },
+
+  /**
+   * Genera un link de WhatsApp con el mensaje formateado.
+   *
+   * @param {Object} datos
+   * @returns {string}
+   */
+  generarLinkWhatsApp(datos) {
+
+    if (!datos || typeof datos !== 'object') {
+      return '';
+    }
+
+    // Reemplazar las variables de plantilla en el mensaje y luego
+    // construir el enlace de WhatsApp con el texto ya codificado.
+    // Toda la lógica de plantilla y URL-encode vive en Utils.
+    const mensajeFormateado = Utils.aplicarPlantilla(datos.mensaje, {
+      primerNombre: datos.primerNombre,
+      nombreCompleto: datos.nombreCompleto,
+      celular: datos.celular
+    });
+
+    return Utils.generarUrlWhatsApp(datos.celular, mensajeFormateado);
   },
 
 
@@ -509,7 +571,7 @@ const Cliente = {
 
 
   /**
-   * Convierte una fecha recibida desde frontend.
+   * Convierte una fecha recibida desde frontend o desde Sheets.
    *
    * @param {*} valor
    * @returns {Date|string}
@@ -530,21 +592,18 @@ const Cliente = {
       return '';
     }
 
-    const partes =
-      texto.split('-');
-
+    // Parsear como YYYY-MM-DD (formato de <input type="date">)
+    // Se construye manualmente en hora LOCAL para evitar
+    // el desfase de zona horaria que produce new Date("YYYY-MM-DD")
+    // (que interpreta la cadena como UTC).
+    const partes = texto.split('-');
     if (partes.length !== 3) {
       return '';
     }
 
-    const anio =
-      Number(partes[0]);
-
-    const mes =
-      Number(partes[1]);
-
-    const dia =
-      Number(partes[2]);
+    const anio = Number(partes[0]);
+    const mes = Number(partes[1]);
+    const dia = Number(partes[2].substring(0, 2));
 
     if (
       !Number.isInteger(anio) ||
@@ -554,13 +613,11 @@ const Cliente = {
       return '';
     }
 
-    const fecha =
-      new Date(
-        anio,
-        mes - 1,
-        dia
-      );
+    // Crear fecha en hora LOCAL (mediodía para evitar cualquier
+    // ambigüedad de zona horaria al leerla posteriormente).
+    const fecha = new Date(anio, mes - 1, dia, 12, 0, 0, 0);
 
+    // Validar que la fecha es válida (detecta fechas imposibles como 31/02)
     if (
       fecha.getFullYear() !== anio ||
       fecha.getMonth() !== mes - 1 ||
@@ -679,7 +736,9 @@ const Cliente = {
         Utils.texto(fila[6]),
 
       fechaNacimiento:
-        Utils.fecha(fila[7]),
+        this._normalizarFecha(
+          fila[7]
+        ),
 
       primerVehiculoInteres:
         Utils.texto(fila[8]),

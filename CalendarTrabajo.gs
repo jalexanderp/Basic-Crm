@@ -21,14 +21,22 @@
 const CalendarTrabajo = {
 
   /*
-   * ID REAL del calendario "Trabajo".
+   * ID del calendario "Trabajo".
    *
    * Se utiliza el ID en lugar del nombre para evitar
    * problemas si existen varios calendarios o si
    * posteriormente se cambia el nombre.
+   *
+   * Para obtener el ID de tu calendario:
+   * 1. Ve a Google Calendar
+   * 2. En la barra lateral, busca tu calendario "Trabajo"
+   * 3. Haz clic en los tres puntos (...) y selecciona "Configurar y compartir"
+   * 4. Copia el ID del calendario
+   *
+   * Si no tienes un calendario específico, puedes usar el calendario predeterminado
+   * ejecutando CalendarTrabajo.getCalendarId() desde el editor de Apps Script.
    */
-  ID_CALENDARIO:
-    'a5697dd20a4a23af4cf7e44007974cdb75a564481a9e2b5e17a4d70f43486bb6@group.calendar.google.com',
+  ID_CALENDARIO: CalendarApp.getDefaultCalendar().getId(),
 
   /*
    * Nombre utilizado únicamente como referencia
@@ -58,6 +66,16 @@ const CalendarTrabajo = {
    */
   HORAS_RECORDATORIO:
     24,
+
+  /**
+   * Obtiene las horas de anticipación del recordatorio
+   * desde la hoja CONFIGURACION.
+   *
+   * @returns {number}
+   */
+  obtenerHorasRecordatorio() {
+    return Config.obtenerParametro('Horas de anticipación del recordatorio', this.HORAS_RECORDATORIO);
+  },
 
 
   /**
@@ -114,7 +132,7 @@ const CalendarTrabajo = {
     );
 
     const minutosRecordatorio =
-      24 * 60;
+      this.obtenerHorasRecordatorio() * 60;
 
     const titulo =
       this._crearTitulo(datos);
@@ -177,6 +195,63 @@ const CalendarTrabajo = {
     };
   },
 
+  /**
+   * Crea un evento rápido de 1 minuto sin recordatorio.
+   *
+   * Se usa para eventos automáticos que deben ser breves.
+   *
+   * @param {Object} datos
+   * @returns {Object}
+   */
+  crearEventoRapido(datos) {
+
+    if (!datos || typeof datos !== 'object') {
+      throw new Error('Los datos del calendario son obligatorios.');
+    }
+
+    const calendario = this._obtenerCalendario();
+
+    const fechaInicio = this._crearFechaHora(
+      datos.fechaEvento,
+      datos.horaEvento
+    );
+
+    const fechaFin = new Date(
+      fechaInicio.getTime() +
+      1 * 60 * 1000
+    );
+
+    this._validarDisponibilidad(
+      calendario,
+      fechaInicio,
+      fechaFin
+    );
+
+    const minutosRecordatorio = 0;
+
+    const titulo = this._crearTitulo(datos);
+
+    const descripcion = this._crearDescripcion(datos);
+
+    const evento = calendario.createEvent(
+      titulo,
+      fechaInicio,
+      fechaFin,
+      {
+        description: descripcion
+      }
+    );
+
+    evento.removeAllReminders();
+
+    return {
+      id: evento.getId(),
+      titulo: titulo,
+      fechaInicio: fechaInicio,
+      fechaFin: fechaFin,
+      minutosRecordatorio: minutosRecordatorio
+    };
+  },
 
   /**
    * Elimina un evento de Calendar.
@@ -707,6 +782,31 @@ const CalendarTrabajo = {
         )
 
     ].join('\n');
+  },
+
+  /**
+   * Obtiene el ID del calendario predeterminado.
+   * Usa esta función para obtener el ID correcto de tu calendario.
+   *
+   * @returns {string}
+   */
+  getCalendarId() {
+    const calendar = CalendarApp.getDefaultCalendar();
+    return calendar.getId();
+  },
+
+  /**
+   * Lista los calendarios disponibles.
+   * Usa esta función para encontrar el ID de tu calendario "Trabajo".
+   *
+   * @returns {Array<string>}
+   */
+  listCalendars() {
+    const calendars = CalendarApp.getAllCalendars();
+    return calendars.map(cal => ({
+      name: cal.getName(),
+      id: cal.getId()
+    }));
   }
 
 };
