@@ -782,3 +782,56 @@ const Cliente = {
   }
 
 };
+
+
+
+/**
+ * FUNCIÓN DE DIAGNÓSTICO (ejecutar manualmente desde el editor de Apps Script).
+ *
+ * Ayuda a averiguar por qué "No hay clientes para mostrar".
+ * Ejecuta esta función y revisa "Ver > Registros" (Ctrl+Enter).
+ */
+function diagnosticarClientes() {
+
+  // 1. ¿El script está vinculado a una hoja de cálculo?
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) {
+    Logger.log('ERROR: getActiveSpreadsheet() devolvió null.');
+    Logger.log('El script NO está vinculado a una hoja de cálculo (es standalone).');
+    return;
+  }
+  Logger.log('Spreadsheet activo: ' + ss.getName() + ' (id: ' + ss.getId() + ')');
+
+  // 2. Listar todas las hojas disponibles.
+  const hojas = ss.getSheets().map(function (h) { return h.getName(); });
+  Logger.log('Hojas disponibles: ' + JSON.stringify(hojas));
+
+  // 3. ¿Existe la hoja CLIENTES con el nombre exacto configurado?
+  Logger.log('Nombre esperado (CONFIG.HOJAS.CLIENTES): "' + CONFIG.HOJAS.CLIENTES + '"');
+  const hojaClientes = ss.getSheetByName(CONFIG.HOJAS.CLIENTES);
+  if (!hojaClientes) {
+    Logger.log('ERROR: No se encontró una hoja con ese nombre exacto.');
+    return;
+  }
+
+  // 4. ¿Cuántas filas tiene?
+  const valores = hojaClientes.getDataRange().getValues();
+  Logger.log('Filas totales en CLIENTES (incluye encabezado): ' + valores.length);
+  if (valores.length > 0) {
+    Logger.log('Fila 1 (encabezados): ' + JSON.stringify(valores[0]));
+  }
+  if (valores.length > 1) {
+    Logger.log('Fila 2 (primer cliente): ' + JSON.stringify(valores[1]));
+  }
+
+  // 5. ¿Qué devuelve obtenerTodos()?
+  try {
+    const clientes = Cliente.obtenerTodos();
+    Logger.log('Cliente.obtenerTodos() devolvió ' + clientes.length + ' clientes.');
+    if (clientes.length > 0) {
+      Logger.log('Primer cliente: ' + JSON.stringify(clientes[0]));
+    }
+  } catch (e) {
+    Logger.log('ERROR en obtenerTodos(): ' + e.message);
+  }
+}
