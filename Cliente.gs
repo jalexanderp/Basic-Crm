@@ -735,10 +735,12 @@ const Cliente = {
       email:
         Utils.texto(fila[6]),
 
+      // La fecha de nacimiento se devuelve como texto (yyyy-MM-dd o '')
+      // para que el objeto sea serializable sin problemas al frontend.
+      // La conversión a Date se hace internamente donde se necesite
+      // (por ejemplo al crear el evento de cumpleaños).
       fechaNacimiento:
-        this._normalizarFecha(
-          fila[7]
-        ),
+        Utils.fecha(fila[7]),
 
       primerVehiculoInteres:
         Utils.texto(fila[8]),
