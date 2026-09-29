@@ -84,10 +84,13 @@ const CalendarTrabajo = {
    * Este método solamente debe llamarse cuando
    * el evento requiere seguimiento.
    *
-   * @param {Object} datos
+   * @param {Object} datos Datos del evento (incluye duracionMinutos opcional).
+   * @param {boolean} [permitirCruce] Si es true, crea la cita aunque se
+   *   cruce con otro evento. Si es false y hay cruce, lanza un error con
+   *   prefijo CONFLICTO_HORARIO::
    * @returns {Object}
    */
-  crearEvento(datos) {
+  crearEvento(datos, permitirCruce) {
 
     if (!datos || typeof datos !== 'object') {
 
@@ -105,31 +108,31 @@ const CalendarTrabajo = {
         datos.horaEvento
       );
 
+    // Duración indicada por el usuario (o el valor por defecto).
+    const duracionMinutos =
+      this._duracionMinutos(datos.duracionMinutos);
+
     const fechaFin =
       new Date(
         fechaInicio.getTime() +
-        this.DURACION_MINUTOS *
+        duracionMinutos *
         60 *
         1000
       );
 
     /*
-     * Validamos disponibilidad considerando
-     * una holgura completa de una hora.
-     *
-     * Ejemplo:
-     *
-     * Seguimiento:
-     * 10:15 - 11:15
-     *
-     * Ventana protegida:
-     * 09:15 - 12:15
+     * Validamos el CRUCE REAL con otros eventos (solapamiento de
+     * inicio/fin), SIN holgura. Solo cuando NO se ha autorizado el
+     * cruce. Si permitirCruce es true, se omite la validación y la
+     * cita puede crearse en paralelo a otras.
      */
-    this._validarDisponibilidad(
-      calendario,
-      fechaInicio,
-      fechaFin
-    );
+    if (permitirCruce !== true) {
+      this._validarDisponibilidad(
+        calendario,
+        fechaInicio,
+        fechaFin
+      );
+    }
 
     const minutosRecordatorio =
       this.obtenerHorasRecordatorio() * 60;
@@ -348,27 +351,12 @@ const CalendarTrabajo = {
     fechaFin
   ) {
 
-    const margen =
-      this.HOLGURA_MINUTOS *
-      60 *
-      1000;
-
-    const ventanaInicio =
-      new Date(
-        fechaInicio.getTime() -
-        margen
-      );
-
-    const ventanaFin =
-      new Date(
-        fechaFin.getTime() +
-        margen
-      );
-
+    // Detección de CRUCE REAL: solapamiento del intervalo del evento
+    // [fechaInicio, fechaFin) con eventos existentes. SIN holgura.
     const eventos =
       calendario.getEvents(
-        ventanaInicio,
-        ventanaFin
+        fechaInicio,
+        fechaFin
       );
 
     if (
@@ -390,10 +378,8 @@ const CalendarTrabajo = {
             evento.getEndTime();
 
           return (
-            inicioExistente <
-            ventanaFin &&
-            finExistente >
-            ventanaInicio
+            inicioExistente < fechaFin &&
+            finExistente > fechaInicio
           );
         }
       );
@@ -417,16 +403,34 @@ const CalendarTrabajo = {
         'h:mm a'
       );
 
+    /*
+     * Prefijo CONFLICTO_HORARIO:: para que el frontend reconozca que
+     * es un cruce de horario (y ofrezca crear el evento en paralelo),
+     * en lugar de tratarlo como un error genérico.
+     */
     throw new Error(
-      'No es posible agendar el seguimiento. ' +
-      'Existe otro compromiso en el calendario ' +
-      this.NOMBRE_CALENDARIO +
-      ' entre ' +
-      inicio +
-      ' y ' +
-      fin +
-      ', considerando la holgura de 1 hora.'
+      'CONFLICTO_HORARIO::' +
+      'Ya existe un evento en la misma fecha/hora (' +
+      inicio + ' - ' + fin + ').'
     );
+  },
+
+
+  /**
+   * Normaliza la duración en minutos (usa DURACION_MINUTOS por defecto).
+   *
+   * @param {*} valor
+   * @returns {number}
+   */
+  _duracionMinutos(valor) {
+
+    const n = parseInt(valor, 10);
+
+    if (isNaN(n) || n < 1) {
+      return this.DURACION_MINUTOS;
+    }
+
+    return n;
   },
 
   /**

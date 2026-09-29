@@ -38,7 +38,178 @@ const Evento = {
     FECHA_NOTIFICACION: 10,
     RESULTADO_EVENTO: 11,
     MOTIVO_SEGUIMIENTO: 12,
-    EVENTO_CALENDAR: 13
+    EVENTO_CALENDAR: 13,
+    DURACION_MINUTOS: 14
+  },
+
+  // Duración por defecto (minutos) para eventos manuales.
+  DURACION_DEFECTO: 60,
+
+  // Duración (minutos) para los eventos automáticos rápidos.
+  DURACION_RAPIDA: 1,
+
+
+  /**
+   * Crea un evento CRM manual (desde el formulario).
+   *
+   * Si requiere seguimiento, crea una cita en Calendar con la duración
+   * indicada (por defecto 60 minutos) y recordatorio según CONFIGURACION.
+   *
+   * @param {Object} datos Datos del evento (incluye duracionMinutos opcional).
+   * @param {boolean} [permitirCruce] Si es true, crea la cita aunque se
+   *   cruce con otro compromiso. Si es false (por defecto) y hay cruce,
+   *   se lanza un error con prefijo CONFLICTO_HORARIO:: para que el
+   *   frontend ofrezca crearla de todas formas.
+   * @returns {Object}
+   */
+  crear(datos, permitirCruce) {
+
+    this._validarDatos(datos);
+
+    const lock =
+      LockService.getScriptLock();
+
+    lock.waitLock(10000);
+
+    let idEventoCalendar = '';
+
+    try {
+
+      const hoja =
+        Spreadsheet.obtenerHoja(this.NOMBRE_HOJA);
+
+      const cliente =
+        Cliente.obtenerPorId(datos.idCliente);
+
+      if (!cliente) {
+        throw new Error('El cliente indicado no existe.');
+      }
+
+      const idEvento =
+        this._generarNuevoId(hoja);
+
+      const ahora = new Date();
+
+      const seguimiento =
+        this._texto(datos.requiereSeguimiento);
+
+      const fechaEvento =
+        seguimiento === 'Sí'
+          ? this._convertirFecha(datos.fechaEvento)
+          : '';
+
+      const horaEvento =
+        seguimiento === 'Sí'
+          ? this._formatearHora(datos.horaEvento)
+          : '';
+
+      // Duración: la del formulario o el valor por defecto (60).
+      const duracionMinutos =
+        this._duracionValida(datos.duracionMinutos, this.DURACION_DEFECTO);
+
+      let fechaNotificacion = '';
+
+      if (seguimiento === 'Sí') {
+        fechaNotificacion =
+          this._calcularFechaNotificacion(
+            fechaEvento,
+            datos.horaEvento
+          );
+      }
+
+      const horaRegistro =
+        Utilities.formatDate(
+          ahora,
+          Session.getScriptTimeZone(),
+          'h:mm a'
+        );
+
+      // CALENDAR: solo se crea una cita cuando requiere seguimiento.
+      if (seguimiento === 'Sí') {
+
+        const datosCalendar = {
+          idEvento: idEvento,
+          idCliente: cliente.idCliente,
+          nombreCliente: cliente.nombreCompleto,
+          tipoEvento: datos.tipoEvento,
+          comentario: datos.comentario,
+          resultadoEvento: datos.resultadoEvento,
+          motivoSeguimiento: datos.motivoSeguimiento,
+          fechaEvento: datos.fechaEvento,
+          horaEvento: datos.horaEvento,
+          duracionMinutos: duracionMinutos
+        };
+
+        const eventoCalendar =
+          CalendarTrabajo.crearEvento(
+            datosCalendar,
+            permitirCruce === true
+          );
+
+        idEventoCalendar = eventoCalendar.id;
+      }
+
+      const fila = [
+        idEvento,
+        cliente.idCliente,
+        ahora,
+        horaRegistro,
+        cliente.nombreCompleto,
+        this._texto(datos.tipoEvento),
+        this._texto(datos.comentario),
+        seguimiento,
+        fechaEvento,
+        horaEvento,
+        fechaNotificacion,
+        this._texto(datos.resultadoEvento),
+        seguimiento === 'Sí' ? this._texto(datos.motivoSeguimiento) : '',
+        idEventoCalendar,
+        duracionMinutos
+      ];
+
+      hoja.appendRow(fila);
+
+      return this._formatearEvento(fila);
+
+    } catch (error) {
+
+      // Si Calendar fue creado pero falló el guardado en Sheets,
+      // intentamos revertirlo para no dejar compromisos huérfanos.
+      if (idEventoCalendar) {
+        try {
+          CalendarTrabajo.eliminarEvento(idEventoCalendar);
+        } catch (errorCalendar) {
+          console.error(
+            'No fue posible revertir el evento de Calendar: ' +
+            errorCalendar.message
+          );
+        }
+      }
+
+      throw error;
+
+    } finally {
+      lock.releaseLock();
+    }
+  },
+
+
+  /**
+   * Normaliza y valida una duración en minutos.
+   *
+   * @param {*} valor Valor recibido.
+   * @param {number} porDefecto Valor a usar si no es válido.
+   * @returns {number}
+   */
+  _duracionValida(valor, porDefecto) {
+
+    const n = parseInt(valor, 10);
+
+    if (isNaN(n) || n < 1) {
+      return porDefecto;
+    }
+
+    return n;
   },
 
 
@@ -162,7 +333,8 @@ const Evento = {
         fechaNotificacion,
         this._texto(datos.resultadoEvento),
         seguimiento === 'Sí' ? this._texto(datos.motivoSeguimiento) : '',
-        idEventoCalendar
+        idEventoCalendar,
+        this.DURACION_RAPIDA
       ];
 
       hoja.appendRow(fila);
@@ -977,6 +1149,12 @@ const Evento = {
           fila[
             this.COLUMNAS.EVENTO_CALENDAR
           ] || ''
+        ),
+
+      duracionMinutos:
+        this._duracionValida(
+          fila[this.COLUMNAS.DURACION_MINUTOS],
+          this.DURACION_DEFECTO
         )
     };
   },

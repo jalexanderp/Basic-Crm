@@ -31,6 +31,9 @@
 
     guardando: false,
 
+    // Últimos datos enviados (para reintentar si hay conflicto de horario).
+    _ultimosDatos: null,
+
 
     /**
      * Abre el formulario para un cliente.
@@ -320,8 +323,8 @@
                     color:#666;
                   "
                 >
-                  Se creará una cita de 1 hora en el
-                  calendario "Trabajo".
+                  Se creará una cita en el calendario
+                  "Trabajo" con la duración indicada.
                 </div>
 
               </div>
@@ -386,6 +389,37 @@
 
 
               <!--
+                DURACIÓN (MINUTOS)
+              -->
+
+              <div class="form-group">
+
+                <label
+                  class="form-label"
+                  for="evento-duracion"
+                >
+                  Duración (minutos)
+                </label>
+
+                <input
+                  type="number"
+                  id="evento-duracion"
+                  name="duracionMinutos"
+                  min="1"
+                  step="1"
+                  value="60"
+                >
+
+                <div
+                  id="error-evento-duracion"
+                  class="field-error"
+                  hidden
+                ></div>
+
+              </div>
+
+
+              <!--
                 MOTIVO
               -->
 
@@ -407,6 +441,16 @@
               </div>
 
             </div>
+
+
+            <!--
+              AVISO DE CONFLICTO DE HORARIO
+            -->
+
+            <div
+              id="evento-aviso-conflicto"
+              hidden
+            ></div>
 
 
             <!--
@@ -530,7 +574,9 @@
      */
     guardar(evento) {
 
-      evento.preventDefault();
+      if (evento && evento.preventDefault) {
+        evento.preventDefault();
+      }
 
       if (this.guardando) {
         return;
@@ -538,12 +584,31 @@
 
       this._limpiarErrores();
 
+      // Ocultar el aviso de conflicto de un intento anterior.
+      this._ocultarAvisoConflicto();
+
       const datos =
         this._obtenerDatos();
 
       if (!this._validar(datos)) {
         return;
       }
+
+      // Guardamos los datos para poder reintentar si hay conflicto.
+      this._ultimosDatos = datos;
+
+      // Primer intento: sin permitir cruce (permitirCruce = false).
+      this._enviar(datos, false);
+    },
+
+
+    /**
+     * Envía la creación del evento al backend.
+     *
+     * @param {Object} datos
+     * @param {boolean} permitirCruce
+     */
+    _enviar(datos, permitirCruce) {
 
       this.guardando = true;
 
@@ -553,11 +618,8 @@
         );
 
       if (boton) {
-
         boton.disabled = true;
-
-        boton.textContent =
-          'Guardando...';
+        boton.textContent = 'Guardando...';
       }
 
       google.script.run
@@ -567,7 +629,39 @@
         .withFailureHandler(
           this._guardadoFallido.bind(this)
         )
-        .apiCrearEvento(datos);
+        .apiCrearEvento(datos, permitirCruce === true);
+    },
+
+
+    /**
+     * Reintenta la creación permitiendo el cruce de horario.
+     * Se invoca desde el botón "Si, crealo!".
+     */
+    crearDeTodasFormas() {
+
+      if (!this._ultimosDatos) {
+        return;
+      }
+
+      this._ocultarAvisoConflicto();
+      this._enviar(this._ultimosDatos, true);
+    },
+
+
+    /**
+     * Oculta el aviso de conflicto de horario si está visible.
+     */
+    _ocultarAvisoConflicto() {
+
+      const aviso =
+        document.getElementById(
+          'evento-aviso-conflicto'
+        );
+
+      if (aviso) {
+        aviso.hidden = true;
+        aviso.innerHTML = '';
+      }
     },
 
 
@@ -612,6 +706,13 @@
           requiereSeguimiento === 'Sí'
             ? this._valor(
                 'evento-hora'
+              )
+            : '',
+
+        duracionMinutos:
+          requiereSeguimiento === 'Sí'
+            ? this._valor(
+                'evento-duracion'
               )
             : '',
 
@@ -799,10 +900,51 @@
           ? error.message
           : 'No fue posible guardar el evento.';
 
+      // Si es un conflicto de horario, mostramos un aviso con la opción
+      // de crear el evento en paralelo (no un popup, sino un banner con
+      // un botón que se muestra/oculta).
+      if (mensaje.indexOf('CONFLICTO_HORARIO::') === 0) {
+        this._mostrarAvisoConflicto();
+        return;
+      }
+
       this._mostrarMensaje(
         mensaje,
         'error'
       );
+    },
+
+
+    /**
+     * Muestra el aviso de conflicto de horario con el botón para crear
+     * el evento de todas maneras.
+     */
+    _mostrarAvisoConflicto() {
+
+      const aviso =
+        document.getElementById(
+          'evento-aviso-conflicto'
+        );
+
+      if (!aviso) {
+        return;
+      }
+
+      aviso.className = 'mensaje mensaje-error';
+      aviso.innerHTML = `
+        <div style="margin-bottom:10px;">
+          Ya existe un evento en la misma fecha/hora, lo creo de todas maneras
+        </div>
+        <button
+          type="button"
+          class="btn btn-primary"
+          onclick="EventoFormularioUI.crearDeTodasFormas()"
+        >
+          Si, crealo!
+        </button>
+      `;
+
+      aviso.hidden = false;
     },
 
 

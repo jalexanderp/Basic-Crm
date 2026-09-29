@@ -63,10 +63,11 @@ function apiActualizarCliente(datos) {
  * EVENTOS
  */
 
-function apiCrearEvento(datos) {
+function apiCrearEvento(datos, permitirCruce) {
 
   return Evento.crear(
-    datos
+    datos,
+    permitirCruce
   );
 }
 
