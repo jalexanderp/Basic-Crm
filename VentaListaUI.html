@@ -200,6 +200,15 @@
           venta.factura
         );
 
+      const valorVehiculo =
+        FrontendUtils.formatearMoneda(venta.valorVehiculo);
+
+      const valorFinanciado =
+        FrontendUtils.formatearMoneda(venta.valorFinanciado);
+
+      const valorRetoma =
+        FrontendUtils.formatearMoneda(venta.valorRetoma);
+
       return `
         <article
           class="card cliente-card"
@@ -223,6 +232,22 @@
                 : ''
             }
           </p>
+
+          ${
+            valorVehiculo
+              ? `<p class="cliente-card-info"><strong>Valor:</strong> ${valorVehiculo}</p>`
+              : ''
+          }
+          ${
+            valorFinanciado
+              ? `<p class="cliente-card-info"><strong>Financiado:</strong> ${valorFinanciado}</p>`
+              : ''
+          }
+          ${
+            valorRetoma
+              ? `<p class="cliente-card-info"><strong>Retoma:</strong> ${valorRetoma}</p>`
+              : ''
+          }
 
         </article>
       `;

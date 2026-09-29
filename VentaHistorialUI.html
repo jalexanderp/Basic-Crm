@@ -122,10 +122,14 @@
       const factura =
         FrontendUtils.escaparHtml(venta.factura);
 
-      const valor =
-        FrontendUtils.escaparHtml(
-          this._formatearValor(venta.valorVehiculo)
-        );
+      const valorVehiculo =
+        FrontendUtils.formatearMoneda(venta.valorVehiculo);
+
+      const valorFinanciado =
+        FrontendUtils.formatearMoneda(venta.valorFinanciado);
+
+      const valorRetoma =
+        FrontendUtils.formatearMoneda(venta.valorRetoma);
 
       return `
         <article
@@ -154,10 +158,21 @@
             </div>
 
             <strong>
-              ${valor ? '$' + valor : ''}
+              ${valorVehiculo}
             </strong>
 
           </div>
+
+          ${
+            valorFinanciado
+              ? `<p class="cliente-card-info"><strong>Financiado:</strong> ${valorFinanciado}</p>`
+              : ''
+          }
+          ${
+            valorRetoma
+              ? `<p class="cliente-card-info"><strong>Retoma:</strong> ${valorRetoma}</p>`
+              : ''
+          }
 
           <p class="cliente-card-info">
             <strong>Venta:</strong> ${idVenta}

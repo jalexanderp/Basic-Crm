@@ -425,6 +425,145 @@ const Evento = {
 
 
   /**
+   * Obtiene el PRÓXIMO evento (fecha de evento futura más cercana) para
+   * un conjunto de clientes, leyendo la hoja EVENTOS una sola vez.
+   *
+   * "Próximo" = evento con requiereSeguimiento = 'Sí' cuya fecha de
+   * evento es hoy o futura, tomando el más cercano por cliente. Incluye
+   * todos los tipos de evento (manuales y automáticos).
+   *
+   * @param {Array<string>} idsClientes
+   * @returns {Object} Mapa { idCliente: eventoProximo }
+   */
+  obtenerProximosPorClientes(idsClientes) {
+
+    const resultado = {};
+
+    if (!idsClientes || !idsClientes.length) {
+      return resultado;
+    }
+
+    // Conjunto de IDs buscados para acceso rápido.
+    const buscados = {};
+    idsClientes.forEach(id => {
+      buscados[String(id)] = true;
+    });
+
+    const hoja =
+      Spreadsheet.obtenerHoja(this.NOMBRE_HOJA);
+
+    const datos =
+      hoja.getDataRange().getValues();
+
+    if (datos.length <= 1) {
+      return resultado;
+    }
+
+    // Hoy a medianoche (para comparar solo por día).
+    const ahora = new Date();
+    const hoy = new Date(
+      ahora.getFullYear(),
+      ahora.getMonth(),
+      ahora.getDate()
+    );
+
+    // Guardamos, por cliente, el evento más próximo y su tiempo.
+    const mejores = {}; // idCliente -> { tiempo, evento }
+
+    for (let i = 1; i < datos.length; i++) {
+
+      const fila = datos[i];
+
+      const idCliente =
+        String(fila[this.COLUMNAS.ID_CLIENTE] || '');
+
+      if (!buscados[idCliente]) {
+        continue;
+      }
+
+      const seguimiento =
+        String(fila[this.COLUMNAS.REQUIERE_SEGUIMIENTO] || '').trim();
+
+      if (seguimiento !== 'Sí') {
+        continue;
+      }
+
+      const valorFecha = fila[this.COLUMNAS.FECHA_EVENTO];
+      const fechaEvento = this._aFechaComparable(valorFecha);
+
+      if (!fechaEvento) {
+        continue;
+      }
+
+      // Solo eventos de hoy en adelante.
+      if (fechaEvento.getTime() < hoy.getTime()) {
+        continue;
+      }
+
+      const tiempo = fechaEvento.getTime();
+
+      if (
+        !mejores[idCliente] ||
+        tiempo < mejores[idCliente].tiempo
+      ) {
+        mejores[idCliente] = {
+          tiempo: tiempo,
+          evento: this._formatearEvento(fila)
+        };
+      }
+    }
+
+    for (const id in mejores) {
+      resultado[id] = mejores[id].evento;
+    }
+
+    return resultado;
+  },
+
+
+  /**
+   * Convierte un valor de fecha de evento a un Date comparable (a
+   * medianoche), aceptando Date, dd/MM/yyyy o yyyy-MM-dd.
+   *
+   * @param {*} valor
+   * @returns {Date|null}
+   */
+  _aFechaComparable(valor) {
+
+    if (!valor) {
+      return null;
+    }
+
+    if (Object.prototype.toString.call(valor) === '[object Date]') {
+      if (isNaN(valor.getTime())) {
+        return null;
+      }
+      return new Date(
+        valor.getFullYear(),
+        valor.getMonth(),
+        valor.getDate()
+      );
+    }
+
+    const texto = String(valor).trim();
+
+    // dd/MM/yyyy
+    let m = texto.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (m) {
+      return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+    }
+
+    // yyyy-MM-dd
+    m = texto.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (m) {
+      return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    }
+
+    return null;
+  },
+
+
+  /**
    * Actualiza un evento existente.
    *
    * IMPORTANTE:

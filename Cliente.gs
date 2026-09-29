@@ -61,9 +61,39 @@ const Cliente = {
       return fechaB - fechaA;
     });
 
-    return filas.map(
+    const clientes = filas.map(
       fila => this._filaAObjeto(fila)
     );
+
+    // Adjuntar a cada cliente su próximo evento (fecha futura más
+    // cercana). Se lee la hoja EVENTOS una sola vez.
+    this._adjuntarProximoEvento(clientes);
+
+    return clientes;
+  },
+
+
+  /**
+   * Adjunta a cada cliente su próximo evento en el campo proximoEvento.
+   * Si no tiene, queda como null.
+   *
+   * @param {Array<Object>} clientes
+   */
+  _adjuntarProximoEvento(clientes) {
+
+    if (!clientes || !clientes.length) {
+      return;
+    }
+
+    const ids = clientes.map(c => c.idCliente);
+
+    const proximos =
+      Evento.obtenerProximosPorClientes(ids);
+
+    clientes.forEach(cliente => {
+      cliente.proximoEvento =
+        proximos[cliente.idCliente] || null;
+    });
   },
 
 
@@ -138,9 +168,13 @@ const Cliente = {
       return fechaB - fechaA;
     });
 
-    return resultados.map(
+    const clientes = resultados.map(
       fila => this._filaAObjeto(fila)
     );
+
+    this._adjuntarProximoEvento(clientes);
+
+    return clientes;
   },
 
 

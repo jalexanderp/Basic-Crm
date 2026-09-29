@@ -218,7 +218,57 @@
             ${vehiculo}
           </p>
 
+          ${this._crearProximoEvento(cliente.proximoEvento)}
+
         </article>
+      `;
+    },
+
+
+    /**
+     * Genera el bloque del próximo evento del cliente (si existe).
+     *
+     * @param {Object|null} evento
+     * @returns {string}
+     */
+    _crearProximoEvento(evento) {
+
+      if (!evento) {
+        return '';
+      }
+
+      const tipo =
+        FrontendUtils.escaparHtml(evento.tipoEvento || 'Evento');
+
+      const fecha =
+        FrontendUtils.escaparHtml(evento.fechaEvento || '');
+
+      const hora =
+        FrontendUtils.escaparHtml(evento.horaEvento || '');
+
+      const comentario =
+        FrontendUtils.escaparHtml(evento.comentario || '');
+
+      // Recortar comentario largo para la tarjeta.
+      const comentarioCorto =
+        comentario.length > 90
+          ? comentario.substring(0, 90) + '…'
+          : comentario;
+
+      return `
+        <div class="proximo-evento">
+          <div class="proximo-evento-tipo">
+            ${tipo}
+          </div>
+          <div class="proximo-evento-fecha">
+            ${fecha}${hora ? ' · ' + hora : ''}
+          </div>
+          ${
+            comentarioCorto
+              ? `<div class="proximo-evento-comentario">${comentarioCorto}</div>`
+              : ''
+          }
+        </div>
       `;
     },
 

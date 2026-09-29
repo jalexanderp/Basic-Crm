@@ -50,6 +50,37 @@
 
 
     /**
+     * Formatea un valor numérico como moneda colombiana: "$ 45.000.000".
+     * Si el valor está vacío o no es numérico, devuelve ''.
+     *
+     * @param {*} valor
+     * @returns {string}
+     */
+    formatearMoneda(valor) {
+
+      if (valor === null || valor === undefined || valor === '') {
+        return '';
+      }
+
+      // Aceptar números o cadenas con separadores.
+      const limpio = String(valor)
+        .replace(/[^\d.,-]/g, '')
+        .replace(/\.(?=\d{3}(\D|$))/g, '')
+        .replace(/,/g, '.');
+
+      const n = Number(limpio);
+
+      if (isNaN(n)) {
+        return '';
+      }
+
+      return '$ ' + n.toLocaleString('es-CO', {
+        maximumFractionDigits: 0
+      });
+    },
+
+
+    /**
      * Convierte el comentario de un evento en HTML seguro.
      *
      * Los eventos automáticos guardan el comentario con el formato:

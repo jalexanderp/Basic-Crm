@@ -216,11 +216,12 @@
               </label>
 
               <input
-                type="number"
+                type="text"
+                inputmode="numeric"
                 id="venta-valor"
                 name="valorVehiculo"
-                min="0"
-                step="1"
+                placeholder="$ 0"
+                oninput="VentaFormularioUI._formatearMonedaInput('venta-valor')"
               >
 
               <div id="error-venta-valor" class="field-error" hidden></div>
@@ -253,11 +254,12 @@
               </label>
 
               <input
-                type="number"
+                type="text"
+                inputmode="numeric"
                 id="venta-valor-financiado"
                 name="valorFinanciado"
-                min="0"
-                step="1"
+                placeholder="$ 0"
+                oninput="VentaFormularioUI._formatearMonedaInput('venta-valor-financiado')"
               >
 
               <div id="error-venta-valor-financiado" class="field-error" hidden></div>
@@ -305,11 +307,12 @@
               </label>
 
               <input
-                type="number"
+                type="text"
+                inputmode="numeric"
                 id="venta-valor-retoma"
                 name="valorRetoma"
-                min="0"
-                step="1"
+                placeholder="$ 0"
+                oninput="VentaFormularioUI._formatearMonedaInput('venta-valor-retoma')"
               >
 
               <div id="error-venta-valor-retoma" class="field-error" hidden></div>
@@ -360,12 +363,17 @@
       this._set('venta-fecha', this._fechaParaInput(venta.fechaVenta));
       this._set('venta-factura', venta.factura);
       this._set('venta-vehiculo', venta.vehiculoVendido);
-      this._set('venta-valor', venta.valorVehiculo);
       this._set('venta-comentarios', venta.comentarios);
-      this._set('venta-valor-financiado', venta.valorFinanciado);
       this._set('venta-entidad', venta.entidadFinanciera);
       this._set('venta-vehiculo-retoma', venta.vehiculoRetoma);
+
+      // Valores: cargar y formatear como moneda.
+      this._set('venta-valor', venta.valorVehiculo);
+      this._set('venta-valor-financiado', venta.valorFinanciado);
       this._set('venta-valor-retoma', venta.valorRetoma);
+      this._formatearMonedaInput('venta-valor');
+      this._formatearMonedaInput('venta-valor-financiado');
+      this._formatearMonedaInput('venta-valor-retoma');
 
       // El cliente no se cambia al editar.
       const inputCliente =
@@ -431,13 +439,56 @@
         fechaVenta: this._valor('venta-fecha'),
         factura: this._valor('venta-factura'),
         vehiculoVendido: this._valor('venta-vehiculo'),
-        valorVehiculo: this._valor('venta-valor'),
+        // Los valores se envían como número limpio (solo dígitos).
+        valorVehiculo: this._soloDigitos('venta-valor'),
         comentarios: this._valor('venta-comentarios'),
-        valorFinanciado: this._valor('venta-valor-financiado'),
+        valorFinanciado: this._soloDigitos('venta-valor-financiado'),
         entidadFinanciera: this._valor('venta-entidad'),
         vehiculoRetoma: this._valor('venta-vehiculo-retoma'),
-        valorRetoma: this._valor('venta-valor-retoma')
+        valorRetoma: this._soloDigitos('venta-valor-retoma')
       };
+    },
+
+
+    /**
+     * Formatea el contenido de un input como moneda mientras se escribe.
+     * Mantiene solo dígitos y los muestra con separador de miles y "$".
+     *
+     * @param {string} id
+     */
+    _formatearMonedaInput(id) {
+
+      const el = document.getElementById(id);
+      if (!el) {
+        return;
+      }
+
+      const digitos = String(el.value).replace(/\D/g, '');
+
+      if (!digitos) {
+        el.value = '';
+        return;
+      }
+
+      const n = Number(digitos);
+      el.value = '$ ' + n.toLocaleString('es-CO');
+    },
+
+
+    /**
+     * Devuelve solo los dígitos de un campo (para enviar al backend).
+     *
+     * @param {string} id
+     * @returns {string}
+     */
+    _soloDigitos(id) {
+
+      const el = document.getElementById(id);
+      if (!el) {
+        return '';
+      }
+
+      return String(el.value).replace(/\D/g, '');
     },
 
 
