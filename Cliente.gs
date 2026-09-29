@@ -473,11 +473,17 @@ const Cliente = {
       Evento.actualizarEventoCumpleanos(cliente);
     }
 
-    // Actualizar eventos postventa si la fecha de registro cambió
-    // (aunque normalmente no debería cambiar, por seguridad)
-    if (cliente.fechaRegistro) {
-      Evento.actualizarEventosPostventa(cliente);
-    }
+    // NOTA: La generación automática de eventos de postventa se ha
+    // DESACTIVADO temporalmente. Estaba ligada a la fecha de REGISTRO
+    // del cliente y se disparaba en cada edición, creando eventos de
+    // postventa (3/6/12 meses) para clientes que no han comprado ningún
+    // vehículo. La postventa debe generarse a partir de una VENTA real
+    // (fecha de venta), lo cual se implementará cuando exista el flujo
+    // de ventas. Hasta entonces NO se generan eventos de postventa.
+    //
+    // if (cliente.fechaRegistro) {
+    //   Evento.actualizarEventosPostventa(cliente);
+    // }
   },
 
   /**
