@@ -46,6 +46,74 @@
       const texto = String(valor ?? '').trim();
 
       return texto || '—';
+    },
+
+
+    /**
+     * Convierte el comentario de un evento en HTML seguro.
+     *
+     * Los eventos automáticos guardan el comentario con el formato:
+     *   "<mensaje>\n\nEnviar por WhatsApp: <url>"
+     *
+     * Esta función:
+     * - Escapa el texto del mensaje (seguro contra HTML).
+     * - Reemplaza la URL cruda de WhatsApp por un enlace clickeable
+     *   "Enviar por WhatsApp" que abre en una pestaña nueva.
+     * - Respeta los saltos de línea del mensaje.
+     *
+     * Si el comentario no contiene un link de WhatsApp, simplemente
+     * devuelve el texto escapado con sus saltos de línea.
+     *
+     * @param {string} comentario
+     * @returns {string} HTML listo para insertar.
+     */
+    comentarioAHtml(comentario) {
+
+      const texto = String(comentario ?? '').trim();
+
+      if (!texto) {
+        return '—';
+      }
+
+      // Detectar el link de WhatsApp dentro del comentario.
+      // Formato esperado: "...Enviar por WhatsApp: https://..."
+      const patron =
+        /Enviar por WhatsApp:\s*(https?:\/\/\S+)/i;
+
+      const coincidencia = texto.match(patron);
+
+      if (!coincidencia) {
+        // No hay link: devolver el texto escapado con saltos de línea.
+        return this.escaparHtml(texto)
+          .replace(/\n/g, '<br>');
+      }
+
+      const url = coincidencia[1];
+
+      // Parte del mensaje (antes del "Enviar por WhatsApp:").
+      const mensaje = texto
+        .substring(0, coincidencia.index)
+        .trim();
+
+      const mensajeHtml = this.escaparHtml(mensaje)
+        .replace(/\n/g, '<br>');
+
+      // El href se escapa para atributo (comillas), la URL es de confianza
+      // porque la genera el propio backend.
+      const urlSegura = this.escaparHtml(url);
+
+      const enlace = `
+        <a
+          href="${urlSegura}"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="enlace-whatsapp"
+        >
+          Enviar por WhatsApp
+        </a>
+      `;
+
+      return `${mensajeHtml}<br><br>${enlace}`;
     }
 
   };

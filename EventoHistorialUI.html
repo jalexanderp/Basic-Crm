@@ -165,11 +165,11 @@
           )
         );
 
+      // El comentario puede incluir un link de WhatsApp: lo convertimos
+      // en HTML seguro con un enlace clickeable (ver FrontendUtils).
       const comentario =
-        FrontendUtils.textoOGrion(
-          FrontendUtils.escaparHtml(
-            evento.comentario || ''
-          )
+        FrontendUtils.comentarioAHtml(
+          evento.comentario || ''
         );
 
       const resultado =
@@ -246,7 +246,7 @@
           </div>
 
 
-          <p>
+          <p style="overflow-wrap:break-word; word-break:break-word;">
             ${comentario}
           </p>
 
