@@ -27,6 +27,14 @@ function apiObtenerClientes() {
 }
 
 
+function apiBuscarClientes(termino) {
+
+  return Cliente.buscar(
+    termino
+  );
+}
+
+
 function apiObtenerCliente(idCliente) {
 
   return Cliente.obtenerPorId(

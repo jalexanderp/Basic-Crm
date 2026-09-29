@@ -24,9 +24,20 @@
 
   const ClienteListaUI = {
 
+    // Todos los clientes cargados desde el backend.
     clientes: [],
 
+    // Lista actualmente visible (según paginación o búsqueda).
     clientesFiltrados: [],
+
+    // Cuántos clientes mostrar por página / paso de "Ver más".
+    TAMANO_PAGINA: 5,
+
+    // Cuántos se están mostrando actualmente (para el modo listado).
+    mostrados: 5,
+
+    // Indica si estamos en modo búsqueda (true) o listado normal (false).
+    enBusqueda: false,
 
 
     cargar() {
@@ -47,15 +58,74 @@
     _cargaExitosa(clientes) {
 
       this.clientes = Array.isArray(clientes)
-        ? clientes.slice(0, 5)
+        ? clientes
         : [];
 
-      this.clientesFiltrados =
-        [...this.clientes];
+      this.enBusqueda = false;
+      this.mostrados = this.TAMANO_PAGINA;
 
-      this.mostrar(
-        this.clientesFiltrados
-      );
+      this._renderizarListado();
+    },
+
+
+    /**
+     * Renderiza el listado paginado (los primeros "mostrados" clientes)
+     * junto con el botón "Ver más" si quedan más por mostrar.
+     */
+    _renderizarListado() {
+
+      this.clientesFiltrados =
+        this.clientes.slice(0, this.mostrados);
+
+      this.mostrar(this.clientesFiltrados);
+
+      this._actualizarBotonVerMas();
+    },
+
+
+    /**
+     * Muestra u oculta el botón "Ver más" según queden más clientes.
+     */
+    _actualizarBotonVerMas() {
+
+      const contenedor = this._obtenerContenedor();
+      if (!contenedor) {
+        return;
+      }
+
+      // En modo búsqueda no paginamos: no hay botón "Ver más".
+      const quedanMas =
+        !this.enBusqueda &&
+        this.clientes.length > this.mostrados;
+
+      let boton = document.getElementById('btn-ver-mas');
+
+      if (quedanMas) {
+        if (!boton) {
+          boton = document.createElement('button');
+          boton.id = 'btn-ver-mas';
+          boton.type = 'button';
+          boton.className = 'btn btn-secondary';
+          boton.style.marginTop = '12px';
+          boton.style.width = '100%';
+          boton.textContent = 'Ver más';
+          boton.onclick = () => ClienteListaUI.verMas();
+          contenedor.parentNode.appendChild(boton);
+        }
+        boton.hidden = false;
+      } else if (boton) {
+        boton.hidden = true;
+      }
+    },
+
+
+    /**
+     * Muestra los siguientes clientes (incrementa la página).
+     */
+    verMas() {
+
+      this.mostrados += this.TAMANO_PAGINA;
+      this._renderizarListado();
     },
 
 
@@ -168,17 +238,14 @@
         input.value.trim();
 
       /*
-       * Si no hay búsqueda, mostramos nuevamente
-       * los 5 clientes cargados inicialmente.
+       * Si no hay búsqueda, volvemos al modo listado paginado
+       * (los primeros clientes + botón "Ver más").
        */
       if (!termino) {
 
-        this.clientesFiltrados =
-          [...this.clientes];
-
-        this.mostrar(
-          this.clientesFiltrados
-        );
+        this.enBusqueda = false;
+        this.mostrados = this.TAMANO_PAGINA;
+        this._renderizarListado();
 
         return;
       }
@@ -187,8 +254,9 @@
        * La búsqueda se realiza en todo Sheets.
        *
        * Esto permite encontrar clientes que todavía
-       * no forman parte de los 5 registros iniciales.
+       * no forman parte de los registros iniciales.
        */
+      this.enBusqueda = true;
       this.mostrarCargando();
 
       google.script.run
@@ -211,9 +279,11 @@
           ? clientes
           : [];
 
-      this.mostrar(
-        this.clientesFiltrados
-      );
+      // En búsqueda mostramos todos los resultados (sin paginación).
+      this.mostrar(this.clientesFiltrados);
+
+      // Ocultamos el botón "Ver más" mientras hay búsqueda activa.
+      this._actualizarBotonVerMas();
     },
 
 
@@ -243,6 +313,12 @@
           Cargando clientes...
         </div>
       `;
+
+      // Ocultar el botón "Ver más" mientras se carga.
+      const boton = document.getElementById('btn-ver-mas');
+      if (boton) {
+        boton.hidden = true;
+      }
     },
 
 
