@@ -221,11 +221,13 @@ const CalendarTrabajo = {
       1 * 60 * 1000
     );
 
-    this._validarDisponibilidad(
-      calendario,
-      fechaInicio,
-      fechaFin
-    );
+    /*
+     * Los eventos automáticos (cumpleaños, postventa, seguimiento
+     * inicial) son recordatorios de 1 minuto a las 7:00 AM. NO son
+     * citas reales, por lo que NO validamos disponibilidad ni holgura:
+     * pueden coincidir varios el mismo día (p. ej. dos clientes que
+     * cumplen años la misma fecha).
+     */
 
     const minutosRecordatorio = 0;
 
