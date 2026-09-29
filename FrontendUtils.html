@@ -50,6 +50,59 @@
 
 
     /**
+     * Devuelve el HTML de un badge de color según el estado del cliente.
+     *
+     * Verde   -> "Cliente" (ya se le vendió)
+     * Amarillo-> "Seguimiento" / "En seguimiento" / "Lead" / "Prospecto"
+     * Rojo    -> "Perdido" / "Desistió" / "Descartado"
+     * Gris    -> cualquier otro valor
+     *
+     * El texto mostrado es el propio valor de tipoCliente (escapado).
+     *
+     * @param {string} tipoCliente
+     * @returns {string} HTML del badge, o '' si no hay valor.
+     */
+    badgeEstadoCliente(tipoCliente) {
+
+      const texto = String(tipoCliente == null ? '' : tipoCliente).trim();
+
+      if (!texto) {
+        return '';
+      }
+
+      // Normalizar para comparar (sin acentos, minúsculas).
+      let clave = texto.toLowerCase();
+      try {
+        clave = clave.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      } catch (e) {
+        // Si normalize no está disponible, seguimos con la cadena base.
+      }
+
+      let clase = 'badge-gris';
+
+      if (clave.indexOf('cliente') !== -1) {
+        clase = 'badge-verde';
+      } else if (
+        clave.indexOf('seguimiento') !== -1 ||
+        clave.indexOf('lead') !== -1 ||
+        clave.indexOf('prospecto') !== -1
+      ) {
+        clase = 'badge-amarillo';
+      } else if (
+        clave.indexOf('perdid') !== -1 ||
+        clave.indexOf('desist') !== -1 ||
+        clave.indexOf('descart') !== -1
+      ) {
+        clase = 'badge-rojo';
+      }
+
+      return '<span class="badge ' + clase + '">' +
+        this.escaparHtml(texto) +
+        '</span>';
+    },
+
+
+    /**
      * Formatea un valor numérico como moneda colombiana: "$ 45.000.000".
      * Si el valor está vacío o no es numérico, devuelve ''.
      *

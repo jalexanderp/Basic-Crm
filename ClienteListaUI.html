@@ -199,6 +199,11 @@
           cliente.primerVehiculoInteres
         );
 
+      const badgeEstado =
+        FrontendUtils.badgeEstadoCliente(
+          cliente.tipoCliente
+        );
+
       return `
         <article
           class="card cliente-card"
@@ -206,9 +211,19 @@
           onclick="ClienteListaUI.abrirCliente('${idCliente}')"
         >
 
-          <h3 class="cliente-card-nombre">
-            ${nombre}
-          </h3>
+          <div
+            style="
+              display:flex;
+              justify-content:space-between;
+              align-items:flex-start;
+              gap:8px;
+            "
+          >
+            <h3 class="cliente-card-nombre" style="margin:0;">
+              ${nombre}
+            </h3>
+            ${badgeEstado}
+          </div>
 
           <p class="cliente-card-info">
             ${celular}
