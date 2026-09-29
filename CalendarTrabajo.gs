@@ -36,7 +36,8 @@ const CalendarTrabajo = {
    * Si no tienes un calendario específico, puedes usar el calendario predeterminado
    * ejecutando CalendarTrabajo.getCalendarId() desde el editor de Apps Script.
    */
-  ID_CALENDARIO: CalendarApp.getDefaultCalendar().getId(),
+  ID_CALENDARIO:
+    'a5697dd20a4a23af4cf7e44007974cdb75a564481a9e2b5e17a4d70f43486bb6@group.calendar.google.com',
 
   /*
    * Nombre utilizado únicamente como referencia

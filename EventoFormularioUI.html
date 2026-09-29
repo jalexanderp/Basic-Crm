@@ -859,9 +859,13 @@
 
       this.guardando = false;
 
-      if (!evento) {
+      // Restaurar el botón y limpiar avisos SIEMPRE, tanto si navegamos
+      // como si nos quedamos en el formulario. Así el botón nunca queda
+      // atascado en "Guardando...".
+      this._restaurarBoton();
+      this._ocultarAvisoConflicto();
 
-        this._restaurarBoton();
+      if (!evento) {
 
         this._mostrarMensaje(
           'El evento se registró correctamente.',
