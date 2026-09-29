@@ -1276,7 +1276,7 @@ const Evento = {
       return;
     }
 
-    // Obtener evento de cumpleaños existente
+    // Obtener evento de cumpleaños existente (si lo hay)
     const eventos =
       this.obtenerPorCliente(cliente.idCliente);
 
@@ -1285,11 +1285,16 @@ const Evento = {
         evento.tipoEvento === 'Cumpleaños' || evento.tipoEvento === 'Mensaje de cumpleaños'
     );
 
+    // Si ya existe un evento de cumpleaños, lo eliminamos para volver a
+    // crearlo con la fecha/mensaje actualizados.
     if (eventoCumpleanos) {
-      // Eliminar evento existente y crear uno nuevo con el tipo correcto
       this.eliminarEventoPorId(eventoCumpleanos.idEvento);
-      this.crearEventoCumpleanos(cliente);
     }
+
+    // Crear (o recrear) el evento de cumpleaños. Esto cubre el caso en
+    // que el cliente se creó SIN fecha de nacimiento y luego se le agrega
+    // mediante una actualización: aquí se genera el evento por primera vez.
+    this.crearEventoCumpleanos(cliente);
   },
 
   /**
