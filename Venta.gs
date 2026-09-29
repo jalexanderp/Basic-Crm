@@ -132,6 +132,39 @@ const Venta = {
 
 
   /**
+   * Devuelve un mapa { idCliente: true } con los clientes que tienen
+   * al menos una venta registrada. Lee la hoja VENTAS una sola vez.
+   *
+   * @returns {Object}
+   */
+  clientesConVenta() {
+
+    const mapa = {};
+
+    const hoja =
+      Spreadsheet.obtenerHoja(this.NOMBRE_HOJA);
+
+    const valores =
+      hoja.getDataRange().getValues();
+
+    if (valores.length <= 1) {
+      return mapa;
+    }
+
+    const indice = this.COLUMNAS.ID_CLIENTE;
+
+    for (let i = 1; i < valores.length; i++) {
+      const idCliente = Utils.texto(valores[i][indice]);
+      if (idCliente) {
+        mapa[idCliente] = true;
+      }
+    }
+
+    return mapa;
+  },
+
+
+  /**
    * Obtiene una venta por su ID.
    *
    * @param {string} idVenta

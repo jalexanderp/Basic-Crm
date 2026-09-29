@@ -69,6 +69,9 @@ const Cliente = {
     // cercana). Se lee la hoja EVENTOS una sola vez.
     this._adjuntarProximoEvento(clientes);
 
+    // Adjuntar el estado calculado (Cliente/Perdido/Seguimiento).
+    this._adjuntarEstado(clientes);
+
     return clientes;
   },
 
@@ -93,6 +96,58 @@ const Cliente = {
     clientes.forEach(cliente => {
       cliente.proximoEvento =
         proximos[cliente.idCliente] || null;
+    });
+  },
+
+
+  /**
+   * Adjunta a cada cliente su estado calculado (campo estadoCalculado),
+   * según reglas de negocio que cruzan VENTAS y EVENTOS:
+   *
+   *   - 'Cliente'     : tiene al menos una venta.
+   *   - 'Perdido'     : (sin venta) tiene un evento "Desiste del negocio".
+   *   - 'Seguimiento' : (sin venta ni desistir) tiene eventos en curso,
+   *                     o es un cliente sin eventos aún (por defecto).
+   *
+   * No modifica el campo tipoCliente ni ninguna otra lógica.
+   *
+   * @param {Array<Object>} clientes
+   */
+  _adjuntarEstado(clientes) {
+
+    if (!clientes || !clientes.length) {
+      return;
+    }
+
+    const ids = clientes.map(c => c.idCliente);
+
+    // Clientes con al menos una venta.
+    const conVenta = Venta.clientesConVenta();
+
+    // Estado por eventos (desistió / tiene seguimiento).
+    const porEventos = Evento.analizarEstadoPorClientes(ids);
+
+    clientes.forEach(cliente => {
+
+      const id = cliente.idCliente;
+
+      // 1) Con venta => Cliente.
+      if (conVenta[id]) {
+        cliente.estadoCalculado = 'Cliente';
+        return;
+      }
+
+      const info = porEventos[id];
+
+      // 2) Desistió => Perdido.
+      if (info && info.desistio) {
+        cliente.estadoCalculado = 'Perdido';
+        return;
+      }
+
+      // 3) En cualquier otro caso => Seguimiento (incluye clientes
+      //    nuevos sin eventos, según la regla acordada).
+      cliente.estadoCalculado = 'Seguimiento';
     });
   },
 
@@ -173,6 +228,7 @@ const Cliente = {
     );
 
     this._adjuntarProximoEvento(clientes);
+    this._adjuntarEstado(clientes);
 
     return clientes;
   },
@@ -230,9 +286,14 @@ const Cliente = {
 
       if (idFila === idBuscado) {
 
-        return this._filaAObjeto(
+        const cliente = this._filaAObjeto(
           valores[i]
         );
+
+        // Adjuntar el estado calculado también en la ficha individual.
+        this._adjuntarEstado([cliente]);
+
+        return cliente;
       }
     }
 

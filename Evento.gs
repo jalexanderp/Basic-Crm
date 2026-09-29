@@ -522,6 +522,76 @@ const Evento = {
 
 
   /**
+   * Analiza los eventos de cada cliente y devuelve, por cliente, dos
+   * banderas útiles para calcular su estado:
+   *   - desistio: tiene algún evento con resultado "Desiste del negocio"
+   *   - tieneSeguimiento: tiene algún evento cuyo resultado NO es
+   *     "Desiste del negocio" ni "Cierre de venta"
+   *
+   * Lee la hoja EVENTOS una sola vez.
+   *
+   * @param {Array<string>} idsClientes
+   * @returns {Object} Mapa { idCliente: { desistio, tieneSeguimiento } }
+   */
+  analizarEstadoPorClientes(idsClientes) {
+
+    const resultado = {};
+
+    if (!idsClientes || !idsClientes.length) {
+      return resultado;
+    }
+
+    const buscados = {};
+    idsClientes.forEach(id => {
+      buscados[String(id)] = true;
+    });
+
+    const hoja =
+      Spreadsheet.obtenerHoja(this.NOMBRE_HOJA);
+
+    const datos =
+      hoja.getDataRange().getValues();
+
+    if (datos.length <= 1) {
+      return resultado;
+    }
+
+    for (let i = 1; i < datos.length; i++) {
+
+      const fila = datos[i];
+
+      const idCliente =
+        String(fila[this.COLUMNAS.ID_CLIENTE] || '');
+
+      if (!buscados[idCliente]) {
+        continue;
+      }
+
+      const resultadoEvento =
+        String(fila[this.COLUMNAS.RESULTADO_EVENTO] || '')
+          .trim()
+          .toLowerCase();
+
+      if (!resultado[idCliente]) {
+        resultado[idCliente] = {
+          desistio: false,
+          tieneSeguimiento: false
+        };
+      }
+
+      if (resultadoEvento === 'desiste del negocio') {
+        resultado[idCliente].desistio = true;
+      } else if (resultadoEvento !== 'cierre de venta') {
+        // Cualquier otro resultado cuenta como seguimiento en curso.
+        resultado[idCliente].tieneSeguimiento = true;
+      }
+    }
+
+    return resultado;
+  },
+
+
+  /**
    * Convierte un valor de fecha de evento a un Date comparable (a
    * medianoche), aceptando Date, dd/MM/yyyy o yyyy-MM-dd.
    *
