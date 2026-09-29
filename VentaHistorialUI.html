@@ -1,0 +1,231 @@
+<!--
+  ARCHIVO: VentaHistorialUI.html
+
+  Historial de ventas del cliente (dentro de la ficha).
+
+  Responsabilidad:
+  - Cargar las ventas de un cliente.
+  - Mostrar el listado.
+  - Permitir abrir la edición de una venta.
+  - Mostrar estados de carga y vacío.
+
+  No contiene:
+  - acceso directo a Google Sheets.
+  - lógica de negocio.
+  - formulario de venta.
+  - lógica de clientes.
+-->
+
+<script>
+
+  const VentaHistorialUI = {
+
+    ventas: [],
+
+
+    /**
+     * Carga las ventas de un cliente.
+     *
+     * @param {string} idCliente
+     */
+    cargar(idCliente) {
+
+      if (!idCliente) {
+        return;
+      }
+
+      this._idCliente = idCliente;
+
+      const contenedor = this._obtenerContenedor();
+      if (contenedor) {
+        contenedor.innerHTML = `
+          <div class="loading">
+            Cargando ventas...
+          </div>
+        `;
+      }
+
+      google.script.run
+        .withSuccessHandler(
+          this._cargaExitosa.bind(this)
+        )
+        .withFailureHandler(
+          this._cargaFallida.bind(this)
+        )
+        .apiObtenerVentasCliente(idCliente);
+    },
+
+
+    _cargaExitosa(ventas) {
+
+      this.ventas = Array.isArray(ventas) ? ventas : [];
+
+      this.mostrar(this.ventas);
+    },
+
+
+    _cargaFallida(error) {
+
+      const contenedor = this._obtenerContenedor();
+      if (!contenedor) {
+        return;
+      }
+
+      const mensaje =
+        error && error.message
+          ? error.message
+          : 'No fue posible cargar las ventas.';
+
+      contenedor.innerHTML = `
+        <div class="mensaje mensaje-error">
+          ${FrontendUtils.escaparHtml(mensaje)}
+        </div>
+      `;
+    },
+
+
+    mostrar(ventas) {
+
+      const contenedor = this._obtenerContenedor();
+      if (!contenedor) {
+        return;
+      }
+
+      if (!ventas.length) {
+        contenedor.innerHTML = `
+          <div class="estado-vacio">
+            Este cliente no tiene ventas registradas.
+          </div>
+        `;
+        return;
+      }
+
+      contenedor.innerHTML = ventas
+        .map(venta => this._crearTarjeta(venta))
+        .join('');
+    },
+
+
+    _crearTarjeta(venta) {
+
+      const idVenta =
+        FrontendUtils.escaparHtml(venta.idVenta);
+
+      const vehiculo =
+        FrontendUtils.escaparHtml(venta.vehiculoVendido);
+
+      const fecha =
+        FrontendUtils.escaparHtml(
+          this._formatearFecha(venta.fechaVenta)
+        );
+
+      const factura =
+        FrontendUtils.escaparHtml(venta.factura);
+
+      const valor =
+        FrontendUtils.escaparHtml(
+          this._formatearValor(venta.valorVehiculo)
+        );
+
+      return `
+        <article
+          class="card"
+          data-id-venta="${idVenta}"
+        >
+
+          <div
+            style="
+              display:flex;
+              justify-content:space-between;
+              gap:12px;
+              align-items:flex-start;
+              flex-wrap:wrap;
+            "
+          >
+
+            <div>
+              <h4 style="margin:0 0 6px 0;">
+                ${FrontendUtils.textoOGrion(vehiculo)}
+              </h4>
+              <small>
+                ${FrontendUtils.textoOGrion(fecha)}
+                ${factura ? ` · Factura: ${factura}` : ''}
+              </small>
+            </div>
+
+            <strong>
+              ${valor ? '$' + valor : ''}
+            </strong>
+
+          </div>
+
+          <p class="cliente-card-info">
+            <strong>Venta:</strong> ${idVenta}
+          </p>
+
+          <div style="text-align:right;">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="VentaHistorialUI.editar('${idVenta}')"
+            >
+              Editar
+            </button>
+          </div>
+
+        </article>
+      `;
+    },
+
+
+    editar(idVenta) {
+
+      const venta = this.ventas.find(
+        v => v.idVenta === idVenta
+      );
+
+      if (venta) {
+        VentaFormularioUI.editar(venta);
+      }
+    },
+
+
+    _obtenerContenedor() {
+
+      return document.getElementById('ventas-cliente');
+    },
+
+
+    _formatearFecha(valor) {
+
+      const texto = String(valor || '').trim();
+
+      const m = texto.match(/^(\d{4})-(\d{2})-(\d{2})/);
+
+      if (!m) {
+        return texto;
+      }
+
+      return m[3] + '/' + m[2] + '/' + m[1];
+    },
+
+
+    _formatearValor(valor) {
+
+      if (valor === null || valor === undefined || valor === '') {
+        return '';
+      }
+
+      const n = Number(valor);
+
+      if (isNaN(n)) {
+        return String(valor);
+      }
+
+      // Separador de miles con punto.
+      return n.toLocaleString('es-CO');
+    }
+
+  };
+
+</script>

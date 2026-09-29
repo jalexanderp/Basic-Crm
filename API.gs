@@ -86,3 +86,45 @@ function apiActualizarEvento(datos) {
     datos
   );
 }
+
+
+/**
+ * VENTAS
+ */
+
+function apiObtenerVentas() {
+
+  return Venta.obtenerTodas();
+}
+
+
+function apiObtenerVentasCliente(idCliente) {
+
+  return Venta.obtenerPorCliente(
+    idCliente
+  );
+}
+
+
+function apiObtenerVenta(idVenta) {
+
+  return Venta.obtenerPorId(
+    idVenta
+  );
+}
+
+
+function apiCrearVenta(datos) {
+
+  return Venta.crear(
+    datos
+  );
+}
+
+
+function apiActualizarVenta(datos) {
+
+  return Venta.actualizar(
+    datos
+  );
+}

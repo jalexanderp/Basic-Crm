@@ -40,7 +40,31 @@
   <div id="app">
 
     <header id="app-header">
+
       <h1>CRM</h1>
+
+      <nav id="app-nav">
+
+        <button
+          type="button"
+          id="nav-clientes"
+          class="nav-tab nav-tab-activo"
+          onclick="AppUI.irAClientes()"
+        >
+          Clientes
+        </button>
+
+        <button
+          type="button"
+          id="nav-ventas"
+          class="nav-tab"
+          onclick="AppUI.irAVentas()"
+        >
+          Ventas
+        </button>
+
+      </nav>
+
     </header>
 
 
@@ -143,6 +167,82 @@
       >
       </section>
 
+
+      <!-- ======================================================
+           VISTA: VENTAS (listado global)
+           ====================================================== -->
+
+      <section
+        id="vista-ventas"
+        hidden
+      >
+
+        <div
+          style="
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:12px;
+            margin-bottom:16px;
+          "
+        >
+
+          <h2 style="margin:0;">
+            Ventas
+          </h2>
+
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick="VentaFormularioUI.mostrar()"
+          >
+            ＋ Nueva
+          </button>
+
+        </div>
+
+
+        <div class="form-group">
+
+          <label
+            class="form-label"
+            for="buscar-ventas"
+          >
+            Buscar
+          </label>
+
+          <input
+            type="search"
+            id="buscar-ventas"
+            placeholder="Cliente, factura o vehículo"
+            autocomplete="off"
+            oninput="VentaListaUI.filtrar()"
+          >
+
+        </div>
+
+
+        <div id="lista-ventas">
+
+          <div class="loading">
+            Cargando ventas...
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ======================================================
+           VISTA: NUEVA VENTA
+           ====================================================== -->
+
+      <section
+        id="vista-nuevaVenta"
+        hidden
+      >
+      </section>
+
     </main>
 
   </div>
@@ -165,6 +265,12 @@
   <?!= include('EventoFormularioUI'); ?>
 
   <?!= include('EventoHistorialUI'); ?>
+
+  <?!= include('VentaListaUI'); ?>
+
+  <?!= include('VentaFormularioUI'); ?>
+
+  <?!= include('VentaHistorialUI'); ?>
 
   <?!= include('AppUI'); ?>
 

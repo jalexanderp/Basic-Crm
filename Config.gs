@@ -24,7 +24,8 @@ const CONFIG = {
 
   IDS: {
     CLIENTE: 'CLI-',
-    EVENTO: 'EVE-'
+    EVENTO: 'EVE-',
+    VENTA: 'VEN-'
   }
 };
 

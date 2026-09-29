@@ -1515,19 +1515,28 @@ const Evento = {
   },
 
   /**
-   * Actualiza los eventos postventa automáticamente.
+   * Crea o actualiza los eventos automáticos de postventa (3/6/12 meses)
+   * a partir de la FECHA DE VENTA.
    *
-   * Duración: 1 minuto, sin recordatorio.
+   * Se invoca al registrar o actualizar una venta. Cada evento se agenda
+   * a las 7:00 AM del día correspondiente, con duración de 1 minuto y sin
+   * recordatorio. Si un evento del mismo tipo ya existe para el cliente,
+   * se actualiza en lugar de duplicarse.
    *
-   * @param {Object} cliente
+   * @param {Object} cliente Cliente asociado a la venta.
+   * @param {Date|string} fechaVenta Fecha de la venta (ancla del cálculo).
    */
-  actualizarEventosPostventa(cliente) {
+  actualizarEventosPostventa(cliente, fechaVenta) {
 
-    if (!cliente.fechaRegistro) {
+    if (!cliente || !fechaVenta) {
       return;
     }
 
-    const fechaRegistro = this._convertirFecha(cliente.fechaRegistro);
+    const fechaBase = this._convertirFecha(fechaVenta);
+
+    if (!fechaBase) {
+      return;
+    }
 
     // Obtener meses desde la configuración
     const meses3 =
@@ -1540,7 +1549,7 @@ const Evento = {
     // Actualizar evento de 3 meses
     this._actualizarOCrearEventoPostventa(
       cliente,
-      fechaRegistro,
+      fechaBase,
       meses3,
       'Seguimiento Postventa 3 Meses',
       'Mensaje seguimiento 3 meses',
@@ -1550,7 +1559,7 @@ const Evento = {
     // Actualizar evento de 6 meses
     this._actualizarOCrearEventoPostventa(
       cliente,
-      fechaRegistro,
+      fechaBase,
       meses6,
       'Seguimiento Postventa 6 Meses',
       'Mensaje seguimiento 6 meses',
@@ -1560,7 +1569,7 @@ const Evento = {
     // Actualizar evento de 12 meses
     this._actualizarOCrearEventoPostventa(
       cliente,
-      fechaRegistro,
+      fechaBase,
       meses12,
       'Seguimiento Postventa 12 Meses',
       'Mensaje seguimiento 12 meses',

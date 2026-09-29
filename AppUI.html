@@ -27,9 +27,62 @@
      */
     iniciar() {
 
+      this.irAClientes();
+    },
+
+
+    /**
+     * Muestra la sección de Clientes (listado) y marca su pestaña.
+     */
+    irAClientes() {
+
+      this._activarTab('clientes');
+
       NavegacionUI.mostrar('clientes');
 
       ClienteListaUI.cargar();
+    },
+
+
+    /**
+     * Muestra la sección de Ventas (listado) y marca su pestaña.
+     */
+    irAVentas() {
+
+      this._activarTab('ventas');
+
+      NavegacionUI.mostrar('ventas');
+
+      VentaListaUI.cargar();
+    },
+
+
+    /**
+     * Resalta la pestaña activa en el header.
+     *
+     * @param {string} seccion 'clientes' | 'ventas'
+     */
+    _activarTab(seccion) {
+
+      const tabClientes =
+        document.getElementById('nav-clientes');
+
+      const tabVentas =
+        document.getElementById('nav-ventas');
+
+      if (tabClientes) {
+        tabClientes.classList.toggle(
+          'nav-tab-activo',
+          seccion === 'clientes'
+        );
+      }
+
+      if (tabVentas) {
+        tabVentas.classList.toggle(
+          'nav-tab-activo',
+          seccion === 'ventas'
+        );
+      }
     }
 
   };

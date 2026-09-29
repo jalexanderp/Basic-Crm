@@ -1,0 +1,366 @@
+<!--
+  ARCHIVO: VentaListaUI.html
+
+  Interfaz del listado de ventas.
+
+  Responsabilidad:
+  - Cargar ventas desde el backend.
+  - Mostrar las ventas (paginadas de 5 en 5).
+  - Filtrar por cliente, factura o vehículo.
+  - Abrir la edición de una venta.
+  - Mostrar estados de carga y lista vacía.
+
+  No debe contener:
+  - lógica de Google Sheets.
+  - lógica de negocio.
+  - formulario de venta.
+  - lógica de clientes.
+  - CSS global.
+-->
+
+<script>
+
+  const VentaListaUI = {
+
+    // Todas las ventas cargadas desde el backend.
+    ventas: [],
+
+    // Lista actualmente visible (según paginación o búsqueda).
+    ventasFiltradas: [],
+
+    // Cuántas ventas mostrar por página / paso de "Ver más".
+    TAMANO_PAGINA: 5,
+
+    // Cuántas se están mostrando actualmente (modo listado).
+    mostradas: 5,
+
+    // Indica si estamos filtrando (true) o en listado normal (false).
+    enBusqueda: false,
+
+
+    cargar() {
+
+      this.mostrarCargando();
+
+      google.script.run
+        .withSuccessHandler(
+          this._cargaExitosa.bind(this)
+        )
+        .withFailureHandler(
+          this._cargaFallida.bind(this)
+        )
+        .apiObtenerVentas();
+    },
+
+
+    _cargaExitosa(ventas) {
+
+      this.ventas = Array.isArray(ventas)
+        ? ventas
+        : [];
+
+      this.enBusqueda = false;
+      this.mostradas = this.TAMANO_PAGINA;
+
+      this._renderizarListado();
+    },
+
+
+    _cargaFallida(error) {
+
+      const contenedor =
+        this._obtenerContenedor();
+
+      if (!contenedor) {
+        return;
+      }
+
+      const mensaje =
+        error && error.message
+          ? error.message
+          : 'No fue posible cargar las ventas.';
+
+      contenedor.innerHTML = `
+        <div class="mensaje mensaje-error">
+          ${FrontendUtils.escaparHtml(mensaje)}
+        </div>
+      `;
+    },
+
+
+    /**
+     * Renderiza el listado paginado y el botón "Ver más".
+     */
+    _renderizarListado() {
+
+      this.ventasFiltradas =
+        this.ventas.slice(0, this.mostradas);
+
+      this.mostrar(this.ventasFiltradas);
+
+      this._actualizarBotonVerMas();
+    },
+
+
+    /**
+     * Muestra u oculta el botón "Ver más".
+     */
+    _actualizarBotonVerMas() {
+
+      const contenedor = this._obtenerContenedor();
+      if (!contenedor) {
+        return;
+      }
+
+      const quedanMas =
+        !this.enBusqueda &&
+        this.ventas.length > this.mostradas;
+
+      let boton = document.getElementById('btn-ver-mas-ventas');
+
+      if (quedanMas) {
+        if (!boton) {
+          boton = document.createElement('button');
+          boton.id = 'btn-ver-mas-ventas';
+          boton.type = 'button';
+          boton.className = 'btn btn-secondary';
+          boton.style.marginTop = '12px';
+          boton.style.width = '100%';
+          boton.textContent = 'Ver más';
+          boton.onclick = () => VentaListaUI.verMas();
+          contenedor.parentNode.appendChild(boton);
+        }
+        boton.hidden = false;
+      } else if (boton) {
+        boton.hidden = true;
+      }
+    },
+
+
+    /**
+     * Muestra las siguientes ventas.
+     */
+    verMas() {
+
+      this.mostradas += this.TAMANO_PAGINA;
+      this._renderizarListado();
+    },
+
+
+    mostrar(ventas) {
+
+      const contenedor =
+        this._obtenerContenedor();
+
+      if (!contenedor) {
+        return;
+      }
+
+      if (!ventas.length) {
+
+        contenedor.innerHTML = `
+          <div class="estado-vacio">
+            No hay ventas para mostrar.
+          </div>
+        `;
+
+        return;
+      }
+
+      contenedor.innerHTML = ventas
+        .map(venta => this._crearTarjeta(venta))
+        .join('');
+    },
+
+
+    _crearTarjeta(venta) {
+
+      const idVenta =
+        FrontendUtils.escaparHtml(
+          venta.idVenta
+        );
+
+      const nombre =
+        FrontendUtils.escaparHtml(
+          venta.nombreCliente
+        );
+
+      const vehiculo =
+        FrontendUtils.escaparHtml(
+          venta.vehiculoVendido
+        );
+
+      const fecha =
+        FrontendUtils.escaparHtml(
+          this._formatearFecha(venta.fechaVenta)
+        );
+
+      const factura =
+        FrontendUtils.escaparHtml(
+          venta.factura
+        );
+
+      return `
+        <article
+          class="card cliente-card"
+          data-id-venta="${idVenta}"
+          onclick="VentaListaUI.abrirVenta('${idVenta}')"
+        >
+
+          <h3 class="cliente-card-nombre">
+            ${FrontendUtils.textoOGrion(nombre)}
+          </h3>
+
+          <p class="cliente-card-info">
+            ${FrontendUtils.textoOGrion(vehiculo)}
+          </p>
+
+          <p class="cliente-card-info">
+            Fecha: ${FrontendUtils.textoOGrion(fecha)}
+            ${
+              factura
+                ? ` · Factura: ${factura}`
+                : ''
+            }
+          </p>
+
+        </article>
+      `;
+    },
+
+
+    filtrar() {
+
+      const input =
+        document.getElementById('buscar-ventas');
+
+      if (!input) {
+        return;
+      }
+
+      const termino =
+        input.value.trim().toLowerCase();
+
+      // Sin término: volver al listado paginado.
+      if (!termino) {
+        this.enBusqueda = false;
+        this.mostradas = this.TAMANO_PAGINA;
+        this._renderizarListado();
+        return;
+      }
+
+      // Filtrado local sobre las ventas ya cargadas (cliente, factura,
+      // vehículo). Mostramos todos los resultados, sin paginación.
+      this.enBusqueda = true;
+
+      this.ventasFiltradas = this.ventas.filter(venta => {
+        const nombre = String(venta.nombreCliente || '').toLowerCase();
+        const factura = String(venta.factura || '').toLowerCase();
+        const vehiculo = String(venta.vehiculoVendido || '').toLowerCase();
+
+        return (
+          nombre.indexOf(termino) !== -1 ||
+          factura.indexOf(termino) !== -1 ||
+          vehiculo.indexOf(termino) !== -1
+        );
+      });
+
+      this.mostrar(this.ventasFiltradas);
+      this._actualizarBotonVerMas();
+    },
+
+
+    abrirVenta(idVenta) {
+
+      if (!idVenta) {
+        return;
+      }
+
+      const venta = this.ventas.find(
+        v => v.idVenta === idVenta
+      );
+
+      if (venta) {
+        VentaFormularioUI.editar(venta);
+      }
+    },
+
+
+    /**
+     * Actualiza en memoria una venta ya cargada (tras editarla),
+     * sin volver a consultar el backend.
+     *
+     * @param {Object} venta
+     */
+    actualizarVenta(venta) {
+
+      if (!venta || !venta.idVenta) {
+        return;
+      }
+
+      const indice = this.ventas.findIndex(
+        v => v.idVenta === venta.idVenta
+      );
+
+      if (indice === -1) {
+        return;
+      }
+
+      this.ventas[indice] = venta;
+
+      if (!this.enBusqueda) {
+        this._renderizarListado();
+      }
+    },
+
+
+    mostrarCargando() {
+
+      const contenedor =
+        this._obtenerContenedor();
+
+      if (!contenedor) {
+        return;
+      }
+
+      contenedor.innerHTML = `
+        <div class="loading">
+          Cargando ventas...
+        </div>
+      `;
+
+      const boton = document.getElementById('btn-ver-mas-ventas');
+      if (boton) {
+        boton.hidden = true;
+      }
+    },
+
+
+    _obtenerContenedor() {
+
+      return document.getElementById('lista-ventas');
+    },
+
+
+    /**
+     * Formatea una fecha yyyy-MM-dd a dd/MM/yyyy para mostrar.
+     *
+     * @param {string} valor
+     * @returns {string}
+     */
+    _formatearFecha(valor) {
+
+      const texto = String(valor || '').trim();
+
+      const m = texto.match(/^(\d{4})-(\d{2})-(\d{2})/);
+
+      if (!m) {
+        return texto;
+      }
+
+      return m[3] + '/' + m[2] + '/' + m[1];
+    }
+
+  };
+
+</script>

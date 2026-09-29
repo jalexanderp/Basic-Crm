@@ -410,6 +410,40 @@
           >
 
             <h3 style="margin:0;">
+              Ventas
+            </h3>
+
+            <button
+              type="button"
+              class="btn btn-primary"
+              onclick="ClienteFichaUI.registrarVenta()"
+            >
+              ＋ Registrar venta
+            </button>
+
+          </div>
+
+          <div id="ventas-cliente">
+
+            <div class="loading">
+              Cargando ventas...
+            </div>
+
+          </div>
+
+          <hr>
+
+          <div
+            style="
+              display:flex;
+              justify-content:space-between;
+              align-items:center;
+              gap:12px;
+              flex-wrap:wrap;
+            "
+          >
+
+            <h3 style="margin:0;">
               Historial
             </h3>
 
@@ -435,6 +469,10 @@
       `;
 
       EventoHistorialUI.cargar(
+        cliente.idCliente
+      );
+
+      VentaHistorialUI.cargar(
         cliente.idCliente
       );
     },
@@ -473,6 +511,20 @@
       }
 
       EventoFormularioUI.mostrar(
+        this.cliente.idCliente
+      );
+    },
+
+    /**
+     * Abre el formulario de ventas para este cliente.
+     */
+    registrarVenta() {
+
+      if (!this.cliente) {
+        return;
+      }
+
+      VentaFormularioUI.mostrar(
         this.cliente.idCliente
       );
     }

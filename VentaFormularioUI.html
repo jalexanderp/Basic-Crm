@@ -1,0 +1,649 @@
+<!--
+  ARCHIVO: VentaFormularioUI.html
+
+  Formulario de ventas.
+
+  Responsabilidad:
+  - Mostrar el formulario de creación y edición de ventas.
+  - Cargar datos de una venta existente.
+  - Validar campos obligatorios en frontend (cliente y fecha de venta).
+  - Evitar doble envío.
+  - Enviar los datos al backend.
+
+  No debe contener:
+  - acceso directo a Google Sheets.
+  - lógica de negocio.
+  - generación de IDs.
+  - lógica de clientes.
+  - sistema de navegación.
+  - CSS global.
+-->
+
+<script>
+
+  const VentaFormularioUI = {
+
+    guardando: false,
+
+    modo: 'crear',
+
+    ventaEditando: null,
+
+    // Cliente asociado (para preseleccionar al crear desde la ficha).
+    idClienteFijado: null,
+
+
+    /**
+     * Abre el formulario para crear una venta.
+     *
+     * @param {string} [idCliente] Cliente al que se asocia la venta.
+     *   Si viene, el campo de cliente queda fijado.
+     */
+    mostrar(idCliente) {
+
+      const vista =
+        NavegacionUI.obtenerElemento('nuevaVenta');
+
+      if (!vista) {
+        return;
+      }
+
+      this.guardando = false;
+      this.modo = 'crear';
+      this.ventaEditando = null;
+      this.idClienteFijado = idCliente || null;
+
+      vista.innerHTML = this._crearFormulario();
+
+      NavegacionUI.mostrar('nuevaVenta');
+    },
+
+
+    /**
+     * Abre el formulario para editar una venta.
+     *
+     * @param {Object} venta
+     */
+    editar(venta) {
+
+      if (!venta || !venta.idVenta) {
+        return;
+      }
+
+      const vista =
+        NavegacionUI.obtenerElemento('nuevaVenta');
+
+      if (!vista) {
+        return;
+      }
+
+      this.guardando = false;
+      this.modo = 'editar';
+      this.ventaEditando = venta;
+      this.idClienteFijado = venta.idCliente || null;
+
+      vista.innerHTML = this._crearFormulario();
+
+      NavegacionUI.mostrar('nuevaVenta');
+
+      this._cargarDatos(venta);
+    },
+
+
+    _crearFormulario() {
+
+      const esEdicion = this.modo === 'editar';
+
+      const titulo = esEdicion
+        ? 'Editar venta'
+        : 'Nueva venta';
+
+      const textoBoton = esEdicion
+        ? 'Guardar cambios'
+        : 'Guardar venta';
+
+      return `
+        <div class="card">
+
+          <div
+            style="
+              display:flex;
+              align-items:center;
+              gap:12px;
+              margin-bottom:20px;
+              flex-wrap:wrap;
+            "
+          >
+
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="VentaFormularioUI.cancelar()"
+            >
+              ← Volver
+            </button>
+
+            <h2 style="margin:0;">
+              ${titulo}
+            </h2>
+
+          </div>
+
+          <form
+            id="formulario-venta"
+            novalidate
+            onsubmit="VentaFormularioUI.guardar(event)"
+          >
+
+            <h3>Datos principales</h3>
+
+            <!-- ID CLIENTE -->
+            <div class="form-group">
+
+              <label class="form-label" for="venta-id-cliente">
+                ID del cliente
+                <span class="form-required">*</span>
+              </label>
+
+              <input
+                type="text"
+                id="venta-id-cliente"
+                name="idCliente"
+                placeholder="Ej. CLI-000001"
+                value="${this.idClienteFijado ? FrontendUtils.escaparHtml(this.idClienteFijado) : ''}"
+                ${this.idClienteFijado ? 'readonly' : ''}
+                required
+              >
+
+              <div id="error-venta-id-cliente" class="field-error" hidden></div>
+
+            </div>
+
+            <!-- FECHA DE VENTA -->
+            <div class="form-group">
+
+              <label class="form-label" for="venta-fecha">
+                Fecha de venta
+                <span class="form-required">*</span>
+              </label>
+
+              <input
+                type="date"
+                id="venta-fecha"
+                name="fechaVenta"
+                required
+              >
+
+              <div id="error-venta-fecha" class="field-error" hidden></div>
+
+            </div>
+
+            <!-- FACTURA -->
+            <div class="form-group">
+
+              <label class="form-label" for="venta-factura">
+                Factura
+              </label>
+
+              <input
+                type="text"
+                id="venta-factura"
+                name="factura"
+              >
+
+            </div>
+
+            <!-- VEHÍCULO VENDIDO -->
+            <div class="form-group">
+
+              <label class="form-label" for="venta-vehiculo">
+                Vehículo vendido
+              </label>
+
+              <input
+                type="text"
+                id="venta-vehiculo"
+                name="vehiculoVendido"
+              >
+
+            </div>
+
+            <!-- VALOR DEL VEHÍCULO -->
+            <div class="form-group">
+
+              <label class="form-label" for="venta-valor">
+                Valor del vehículo
+              </label>
+
+              <input
+                type="number"
+                id="venta-valor"
+                name="valorVehiculo"
+                min="0"
+                step="1"
+              >
+
+              <div id="error-venta-valor" class="field-error" hidden></div>
+
+            </div>
+
+            <!-- COMENTARIOS -->
+            <div class="form-group">
+
+              <label class="form-label" for="venta-comentarios">
+                Comentarios
+              </label>
+
+              <textarea
+                id="venta-comentarios"
+                name="comentarios"
+                rows="3"
+              ></textarea>
+
+            </div>
+
+
+            <h3>Financiación</h3>
+
+            <!-- VALOR FINANCIADO -->
+            <div class="form-group">
+
+              <label class="form-label" for="venta-valor-financiado">
+                Valor financiado
+              </label>
+
+              <input
+                type="number"
+                id="venta-valor-financiado"
+                name="valorFinanciado"
+                min="0"
+                step="1"
+              >
+
+              <div id="error-venta-valor-financiado" class="field-error" hidden></div>
+
+            </div>
+
+            <!-- ENTIDAD FINANCIERA -->
+            <div class="form-group">
+
+              <label class="form-label" for="venta-entidad">
+                Entidad financiera
+              </label>
+
+              <input
+                type="text"
+                id="venta-entidad"
+                name="entidadFinanciera"
+              >
+
+            </div>
+
+
+            <h3>Retoma</h3>
+
+            <!-- VEHÍCULO RETOMA -->
+            <div class="form-group">
+
+              <label class="form-label" for="venta-vehiculo-retoma">
+                Vehículo recibido en retoma
+              </label>
+
+              <input
+                type="text"
+                id="venta-vehiculo-retoma"
+                name="vehiculoRetoma"
+              >
+
+            </div>
+
+            <!-- VALOR RETOMA -->
+            <div class="form-group">
+
+              <label class="form-label" for="venta-valor-retoma">
+                Valor de la retoma
+              </label>
+
+              <input
+                type="number"
+                id="venta-valor-retoma"
+                name="valorRetoma"
+                min="0"
+                step="1"
+              >
+
+              <div id="error-venta-valor-retoma" class="field-error" hidden></div>
+
+            </div>
+
+
+            <!-- MENSAJE GENERAL -->
+            <div id="venta-formulario-mensaje" hidden></div>
+
+
+            <!-- BOTONES -->
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+
+              <button
+                type="button"
+                class="btn btn-secondary"
+                onclick="VentaFormularioUI.cancelar()"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="submit"
+                id="venta-btn-guardar"
+                class="btn btn-primary"
+              >
+                ${textoBoton}
+              </button>
+
+            </div>
+
+          </form>
+
+        </div>
+      `;
+    },
+
+
+    /**
+     * Carga los datos de una venta en el formulario (modo edición).
+     *
+     * @param {Object} venta
+     */
+    _cargarDatos(venta) {
+
+      this._set('venta-id-cliente', venta.idCliente);
+      this._set('venta-fecha', this._fechaParaInput(venta.fechaVenta));
+      this._set('venta-factura', venta.factura);
+      this._set('venta-vehiculo', venta.vehiculoVendido);
+      this._set('venta-valor', venta.valorVehiculo);
+      this._set('venta-comentarios', venta.comentarios);
+      this._set('venta-valor-financiado', venta.valorFinanciado);
+      this._set('venta-entidad', venta.entidadFinanciera);
+      this._set('venta-vehiculo-retoma', venta.vehiculoRetoma);
+      this._set('venta-valor-retoma', venta.valorRetoma);
+
+      // El cliente no se cambia al editar.
+      const inputCliente =
+        document.getElementById('venta-id-cliente');
+      if (inputCliente) {
+        inputCliente.readOnly = true;
+      }
+    },
+
+
+    guardar(evento) {
+
+      if (evento && evento.preventDefault) {
+        evento.preventDefault();
+      }
+
+      if (this.guardando) {
+        return;
+      }
+
+      this._limpiarErrores();
+
+      const datos = this._obtenerDatos();
+
+      if (!this._validar(datos)) {
+        return;
+      }
+
+      if (this.modo === 'editar') {
+        if (!this.ventaEditando || !this.ventaEditando.idVenta) {
+          this._mostrarMensaje(
+            'No se encontró la venta que se está editando.',
+            'error'
+          );
+          return;
+        }
+        datos.idVenta = this.ventaEditando.idVenta;
+      }
+
+      this.guardando = true;
+      this._mostrarGuardando();
+
+      const handler =
+        this.modo === 'editar'
+          ? 'apiActualizarVenta'
+          : 'apiCrearVenta';
+
+      google.script.run
+        .withSuccessHandler(
+          this._guardadoExitoso.bind(this)
+        )
+        .withFailureHandler(
+          this._guardadoFallido.bind(this)
+        )
+        [handler](datos);
+    },
+
+
+    _obtenerDatos() {
+
+      return {
+        idCliente: this._valor('venta-id-cliente'),
+        fechaVenta: this._valor('venta-fecha'),
+        factura: this._valor('venta-factura'),
+        vehiculoVendido: this._valor('venta-vehiculo'),
+        valorVehiculo: this._valor('venta-valor'),
+        comentarios: this._valor('venta-comentarios'),
+        valorFinanciado: this._valor('venta-valor-financiado'),
+        entidadFinanciera: this._valor('venta-entidad'),
+        vehiculoRetoma: this._valor('venta-vehiculo-retoma'),
+        valorRetoma: this._valor('venta-valor-retoma')
+      };
+    },
+
+
+    _validar(datos) {
+
+      let valido = true;
+
+      if (!datos.idCliente) {
+        this._error(
+          'error-venta-id-cliente',
+          'El cliente es obligatorio.'
+        );
+        valido = false;
+      }
+
+      if (!datos.fechaVenta) {
+        this._error(
+          'error-venta-fecha',
+          'La fecha de venta es obligatoria.'
+        );
+        valido = false;
+      }
+
+      // Validar que los valores numéricos, si se ingresan, sean números.
+      const numericos = [
+        { id: 'error-venta-valor', valor: datos.valorVehiculo },
+        { id: 'error-venta-valor-financiado', valor: datos.valorFinanciado },
+        { id: 'error-venta-valor-retoma', valor: datos.valorRetoma }
+      ];
+
+      numericos.forEach(campo => {
+        if (campo.valor && isNaN(Number(campo.valor))) {
+          this._error(campo.id, 'Debe ser un valor numérico.');
+          valido = false;
+        }
+      });
+
+      return valido;
+    },
+
+
+    _guardadoExitoso(venta) {
+
+      this.guardando = false;
+      this._restaurarBoton();
+
+      // Si veníamos del listado global, refrescamos.
+      if (venta && venta.idVenta) {
+        VentaListaUI.actualizarVenta(venta);
+      }
+
+      // Volver al listado de ventas.
+      AppUI.irAVentas();
+    },
+
+
+    _guardadoFallido(error) {
+
+      this.guardando = false;
+      this._restaurarBoton();
+
+      const mensaje =
+        error && error.message
+          ? error.message
+          : 'No fue posible guardar la venta.';
+
+      this._mostrarMensaje(mensaje, 'error');
+    },
+
+
+    cancelar() {
+
+      if (this.guardando) {
+        return;
+      }
+
+      AppUI.irAVentas();
+    },
+
+
+    _mostrarGuardando() {
+
+      const boton =
+        document.getElementById('venta-btn-guardar');
+
+      if (boton) {
+        boton.disabled = true;
+        boton.textContent = 'Guardando...';
+      }
+    },
+
+
+    _restaurarBoton() {
+
+      const boton =
+        document.getElementById('venta-btn-guardar');
+
+      if (!boton) {
+        return;
+      }
+
+      boton.disabled = false;
+      boton.textContent =
+        this.modo === 'editar'
+          ? 'Guardar cambios'
+          : 'Guardar venta';
+    },
+
+
+    _limpiarErrores() {
+
+      document
+        .querySelectorAll('#formulario-venta .field-error')
+        .forEach(el => {
+          el.textContent = '';
+          el.hidden = true;
+        });
+
+      const mensaje =
+        document.getElementById('venta-formulario-mensaje');
+
+      if (mensaje) {
+        mensaje.textContent = '';
+        mensaje.hidden = true;
+      }
+    },
+
+
+    _error(id, mensaje) {
+
+      const el = document.getElementById(id);
+
+      if (!el) {
+        return;
+      }
+
+      el.textContent = mensaje;
+      el.hidden = false;
+    },
+
+
+    _mostrarMensaje(mensaje, tipo) {
+
+      const el =
+        document.getElementById('venta-formulario-mensaje');
+
+      if (!el) {
+        return;
+      }
+
+      el.className =
+        tipo === 'error'
+          ? 'mensaje mensaje-error'
+          : 'mensaje mensaje-success';
+
+      el.textContent = mensaje;
+      el.hidden = false;
+    },
+
+
+    _set(id, valor) {
+
+      const el = document.getElementById(id);
+
+      if (el) {
+        el.value = (valor === null || valor === undefined) ? '' : valor;
+      }
+    },
+
+
+    _valor(id) {
+
+      const el = document.getElementById(id);
+
+      return el ? String(el.value).trim() : '';
+    },
+
+
+    /**
+     * Convierte una fecha (yyyy-MM-dd o dd/MM/yyyy) al formato del
+     * input date (yyyy-MM-dd).
+     *
+     * @param {string} valor
+     * @returns {string}
+     */
+    _fechaParaInput(valor) {
+
+      const texto = String(valor || '').trim();
+
+      // Ya viene como yyyy-MM-dd.
+      let m = texto.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (m) {
+        return m[1] + '-' + m[2] + '-' + m[3];
+      }
+
+      // dd/MM/yyyy
+      m = texto.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (m) {
+        return m[3] + '-' +
+          m[2].padStart(2, '0') + '-' +
+          m[1].padStart(2, '0');
+      }
+
+      return '';
+    }
+
+  };
+
+</script>
