@@ -199,6 +199,11 @@
           cliente.primerVehiculoInteres
         );
 
+      const infoAdicional =
+        FrontendUtils.escaparHtml(
+          cliente.infoAdicional
+        );
+
       const badgeEstado =
         FrontendUtils.badgeEstadoCliente(
           cliente.estadoCalculado
@@ -232,6 +237,12 @@
           <p class="cliente-card-info">
             ${vehiculo}
           </p>
+
+          ${
+            infoAdicional
+              ? `<p class="cliente-card-info">${infoAdicional}</p>`
+              : ''
+          }
 
           ${this._crearProximoEvento(cliente.proximoEvento)}
 
