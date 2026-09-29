@@ -287,6 +287,39 @@
     },
 
 
+    /**
+     * Actualiza en memoria los datos de un cliente que ya fue cargado
+     * en la lista (por ejemplo tras editarlo), sin volver a consultar
+     * el backend. Si el cliente no está en la lista actual, no hace nada.
+     *
+     * @param {Object} cliente Cliente actualizado.
+     */
+    actualizarCliente(cliente) {
+
+      if (!cliente || !cliente.idCliente) {
+        return;
+      }
+
+      // Actualizar la copia dentro de la lista completa.
+      const indice = this.clientes.findIndex(
+        c => c.idCliente === cliente.idCliente
+      );
+
+      if (indice === -1) {
+        // El cliente no está en la lista cargada; nada que actualizar.
+        return;
+      }
+
+      this.clientes[indice] = cliente;
+
+      // Si no estamos en búsqueda, re-renderizar el listado paginado
+      // para reflejar el cambio en la tarjeta.
+      if (!this.enBusqueda) {
+        this._renderizarListado();
+      }
+    },
+
+
     abrirCliente(idCliente) {
 
       if (!idCliente) {
