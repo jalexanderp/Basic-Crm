@@ -38,7 +38,7 @@
     enBusqueda: false,
 
 
-    cargar() {
+    cargar(offset) {
 
       this.mostrarCargando();
 
@@ -49,15 +49,29 @@
         .withFailureHandler(
           this._cargaFallida.bind(this)
         )
-        .apiObtenerVentas();
+        .apiObtenerVentas(offset || 0, this.TAMANO_PAGINA);
     },
 
 
-    _cargaExitosa(ventas) {
+    _cargaExitosa(respuesta) {
 
-      this.ventas = Array.isArray(ventas)
-        ? ventas
-        : [];
+      // La respuesta ahora es un objeto con paginación
+      if (respuesta && respuesta.ventas) {
+        this.ventas = Array.isArray(respuesta.ventas)
+          ? respuesta.ventas
+          : [];
+        this.totalVentas = respuesta.total || 0;
+        this.offset = respuesta.offset || 0;
+        this.limit = respuesta.limit || this.TAMANO_PAGINA;
+      } else {
+        // Por compatibilidad, si viene directamente un array
+        this.ventas = Array.isArray(respuesta)
+          ? respuesta
+          : [];
+        this.totalVentas = this.ventas.length;
+        this.offset = 0;
+        this.limit = this.TAMANO_PAGINA;
+      }
 
       this.enBusqueda = false;
       this.mostradas = this.TAMANO_PAGINA;
@@ -114,7 +128,7 @@
 
       const quedanMas =
         !this.enBusqueda &&
-        this.ventas.length > this.mostradas;
+        (this.offset + this.ventas.length) < this.totalVentas;
 
       let boton = document.getElementById('btn-ver-mas-ventas');
 
@@ -138,12 +152,20 @@
 
 
     /**
-     * Muestra las siguientes ventas.
+     * Muestra las siguientes ventas (carga la siguiente página desde el backend).
      */
     verMas() {
 
-      this.mostradas += this.TAMANO_PAGINA;
-      this._renderizarListado();
+      // Calcular el nuevo offset
+      const nuevoOffset = this.offset + this.limit;
+
+      // Verificar si hay más datos
+      if (nuevoOffset >= this.totalVentas) {
+        return; // Ya no hay más datos
+      }
+
+      // Cargar la siguiente página desde el backend
+      this.cargar(nuevoOffset);
     },
 
 

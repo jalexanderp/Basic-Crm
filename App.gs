@@ -4,27 +4,6 @@
  *
  * Responsabilidad:
  * - Servir la interfaz principal.
- *
- * No debe contener:
- * - lógica de clientes 
- * - lógica de eventos
- * - acceso directo a Google Sheets
- * - lógica de navegación
- */
-function doGet() {
-  return HtmlService
-    .createTemplateFromFile('Index')
-    .evaluate()
-    .setTitle('CRM')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-}
-
-/**
- * ARCHIVO: App.gs
- * Punto de entrada de la aplicación Web App.
- *
- * Responsabilidad:
- * - Servir la interfaz principal.
  * - Incluir archivos HTML del frontend.
  *
  * No debe contener:

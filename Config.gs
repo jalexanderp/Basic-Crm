@@ -26,6 +26,10 @@ const CONFIG = {
     CLIENTE: 'CLI-',
     EVENTO: 'EVE-',
     VENTA: 'VEN-'
+  },
+
+  CALENDARIO: {
+    ID: 'ID del calendario Trabajo'
   }
 };
 

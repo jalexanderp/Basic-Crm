@@ -21,25 +21,6 @@
 const CalendarTrabajo = {
 
   /*
-   * ID del calendario "Trabajo".
-   *
-   * Se utiliza el ID en lugar del nombre para evitar
-   * problemas si existen varios calendarios o si
-   * posteriormente se cambia el nombre.
-   *
-   * Para obtener el ID de tu calendario:
-   * 1. Ve a Google Calendar
-   * 2. En la barra lateral, busca tu calendario "Trabajo"
-   * 3. Haz clic en los tres puntos (...) y selecciona "Configurar y compartir"
-   * 4. Copia el ID del calendario
-   *
-   * Si no tienes un calendario específico, puedes usar el calendario predeterminado
-   * ejecutando CalendarTrabajo.getCalendarId() desde el editor de Apps Script.
-   */
-  ID_CALENDARIO:
-    'a5697dd20a4a23af4cf7e44007974cdb75a564481a9e2b5e17a4d70f43486bb6@group.calendar.google.com',
-
-  /*
    * Nombre utilizado únicamente como referencia
    * y para mensajes de error.
    */
@@ -76,6 +57,19 @@ const CalendarTrabajo = {
    */
   obtenerHorasRecordatorio() {
     return Config.obtenerParametro('Horas de anticipación del recordatorio', this.HORAS_RECORDATORIO);
+  },
+
+
+  /**
+   * Obtiene el ID del calendario "Trabajo" desde la hoja CONFIGURACION.
+   *
+   * @returns {string} ID del calendario.
+   */
+  obtenerIdCalendario() {
+    return Config.obtenerParametro(
+      CONFIG.CALENDARIO.ID,
+      ''
+    );
   },
 
 
@@ -299,9 +293,23 @@ const CalendarTrabajo = {
    */
   _obtenerCalendario() {
 
+    const idCalendario =
+      this.obtenerIdCalendario();
+
+    if (!idCalendario) {
+      throw new Error(
+        'El ID del calendario "' +
+        this.NOMBRE_CALENDARIO +
+        '" no está configurado en la hoja CONFIGURACION.\n' +
+        'Por favor, agrega un parámetro con el nombre: "' +
+        CONFIG.CALENDARIO.ID +
+        '"'
+      );
+    }
+
     const calendario =
       CalendarApp.getCalendarById(
-        this.ID_CALENDARIO
+        idCalendario
       );
 
     if (!calendario) {

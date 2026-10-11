@@ -40,7 +40,7 @@
     enBusqueda: false,
 
 
-    cargar() {
+    cargar(offset) {
 
       this.mostrarCargando();
 
@@ -51,15 +51,29 @@
         .withFailureHandler(
           this._cargaFallida.bind(this)
         )
-        .apiObtenerClientes();
+        .apiObtenerClientes(offset || 0, this.TAMANO_PAGINA);
     },
 
 
-    _cargaExitosa(clientes) {
+    _cargaExitosa(respuesta) {
 
-      this.clientes = Array.isArray(clientes)
-        ? clientes
-        : [];
+      // La respuesta ahora es un objeto con paginación
+      if (respuesta && respuesta.clientes) {
+        this.clientes = Array.isArray(respuesta.clientes)
+          ? respuesta.clientes
+          : [];
+        this.totalClientes = respuesta.total || 0;
+        this.offset = respuesta.offset || 0;
+        this.limit = respuesta.limit || this.TAMANO_PAGINA;
+      } else {
+        // Por compatibilidad, si viene directamente un array
+        this.clientes = Array.isArray(respuesta)
+          ? respuesta
+          : [];
+        this.totalClientes = this.clientes.length;
+        this.offset = 0;
+        this.limit = this.TAMANO_PAGINA;
+      }
 
       this.enBusqueda = false;
       this.mostrados = this.TAMANO_PAGINA;
@@ -96,7 +110,7 @@
       // En modo búsqueda no paginamos: no hay botón "Ver más".
       const quedanMas =
         !this.enBusqueda &&
-        this.clientes.length > this.mostrados;
+        (this.offset + this.clientes.length) < this.totalClientes;
 
       let boton = document.getElementById('btn-ver-mas');
 
@@ -120,12 +134,20 @@
 
 
     /**
-     * Muestra los siguientes clientes (incrementa la página).
+     * Muestra los siguientes clientes (carga la siguiente página desde el backend).
      */
     verMas() {
 
-      this.mostrados += this.TAMANO_PAGINA;
-      this._renderizarListado();
+      // Calcular el nuevo offset
+      const nuevoOffset = this.offset + this.limit;
+
+      // Verificar si hay más datos
+      if (nuevoOffset >= this.totalClientes) {
+        return; // Ya no hay más datos
+      }
+
+      // Cargar la siguiente página desde el backend
+      this.cargar(nuevoOffset);
     },
 
 

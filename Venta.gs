@@ -40,14 +40,19 @@ const Venta = {
 
 
   /**
-   * Obtiene todas las ventas.
+   * Obtiene todas las ventas con paginación.
    *
    * Se devuelven ordenadas desde la más reciente hasta la más antigua
    * según la fecha de venta.
    *
-   * @returns {Array<Object>}
+   * @param {number} [offset] Índice desde el cual comenzar (por defecto 0).
+   * @param {number} [limit] Número máximo de ventas a devolver (por defecto 5).
+   * @returns {{ventas: Array<Object>, total: number, offset: number, limit: number}}
    */
-  obtenerTodas() {
+  obtenerTodas(offset, limit) {
+
+    offset = offset || 0;
+    limit = limit || 5;
 
     const hoja =
       Spreadsheet.obtenerHoja(this.NOMBRE_HOJA);
@@ -56,7 +61,12 @@ const Venta = {
       hoja.getDataRange().getValues();
 
     if (valores.length <= 1) {
-      return [];
+      return {
+        ventas: [],
+        total: 0,
+        offset: offset,
+        limit: limit
+      };
     }
 
     const filas = valores
@@ -80,9 +90,18 @@ const Venta = {
       return fechaB - fechaA;
     });
 
-    return filas.map(
-      fila => this._filaAObjeto(fila)
-    );
+    // Aplicar paginación
+    const total = filas.length;
+    const filasPaginadas = filas.slice(offset, offset + limit);
+
+    return {
+      ventas: filasPaginadas.map(
+        fila => this._filaAObjeto(fila)
+      ),
+      total: total,
+      offset: offset,
+      limit: limit
+    };
   },
 
 

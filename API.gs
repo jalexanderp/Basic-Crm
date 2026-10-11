@@ -21,9 +21,28 @@
  * CLIENTES
  */
 
-function apiObtenerClientes() {
+function apiObtenerClientes(offset, limit) {
 
-  return Cliente.obtenerTodos();
+  try {
+
+    return Cliente.obtenerTodos(
+      offset,
+      limit
+    );
+
+  } catch (e) {
+
+    // Log del error en el servidor
+    Logger.log('ERROR en apiObtenerClientes: ' + e.message);
+    Logger.log('Stack: ' + e.stack);
+
+    // Devolver error estructurado
+    return {
+      error: true,
+      message: e.message,
+      stack: e.stack
+    };
+  }
 }
 
 
@@ -92,9 +111,28 @@ function apiActualizarEvento(datos) {
  * VENTAS
  */
 
-function apiObtenerVentas() {
+function apiObtenerVentas(offset, limit) {
 
-  return Venta.obtenerTodas();
+  try {
+
+    return Venta.obtenerTodas(
+      offset,
+      limit
+    );
+
+  } catch (e) {
+
+    // Log del error en el servidor
+    Logger.log('ERROR en apiObtenerVentas: ' + e.message);
+    Logger.log('Stack: ' + e.stack);
+
+    // Devolver error estructurado
+    return {
+      error: true,
+      message: e.message,
+      stack: e.stack
+    };
+  }
 }
 
 

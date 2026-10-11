@@ -22,15 +22,20 @@
 const Cliente = {
 
   /**
-   * Obtiene los clientes existentes.
+   * Obtiene los clientes existentes con paginación.
    *
    * Los clientes se devuelven ordenados desde el
    * más reciente hasta el más antiguo según
    * la fecha de registro.
    *
-   * @returns {Array<Object>}
+   * @param {number} [offset] Índice desde el cual comenzar (por defecto 0).
+   * @param {number} [limit] Número máximo de clientes a devolver (por defecto 5).
+   * @returns {{clientes: Array<Object>, total: number, offset: number, limit: number}}
    */
-  obtenerTodos() {
+  obtenerTodos(offset, limit) {
+
+    offset = offset || 0;
+    limit = limit || 5;
 
     const hoja =
       Spreadsheet.obtenerHoja(
@@ -41,7 +46,12 @@ const Cliente = {
       hoja.getDataRange().getValues();
 
     if (valores.length <= 1) {
-      return [];
+      return {
+        clientes: [],
+        total: 0,
+        offset: offset,
+        limit: limit
+      };
     }
 
     const filas = valores
@@ -61,7 +71,11 @@ const Cliente = {
       return fechaB - fechaA;
     });
 
-    const clientes = filas.map(
+    // Aplicar paginación
+    const total = filas.length;
+    const filasPaginadas = filas.slice(offset, offset + limit);
+
+    const clientes = filasPaginadas.map(
       fila => this._filaAObjeto(fila)
     );
 
@@ -72,7 +86,12 @@ const Cliente = {
     // Adjuntar el estado calculado (Cliente/Perdido/Seguimiento).
     this._adjuntarEstado(clientes);
 
-    return clientes;
+    return {
+      clientes: clientes,
+      total: total,
+      offset: offset,
+      limit: limit
+    };
   },
 
 
