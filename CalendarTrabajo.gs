@@ -129,8 +129,26 @@ const CalendarTrabajo = {
       );
     }
 
+    /*
+     * Determinamos los minutos de recordatorio según el tipo de evento.
+     *
+     * Para eventos de tipo "Llamada", el recordatorio es de 0 minutos
+     * (notificación en el momento del evento), similar a los eventos
+     * automáticos.
+     *
+     * Para eventos de seguimiento, usamos el parámetro CONFIGURACION
+     * "Horas de anticipación del recordatorio" (por defecto 24h).
+     */
+    const tipoEvento =
+      String(datos.tipoEvento || '').trim();
+
+    const esLlamada =
+      tipoEvento.toLowerCase() === 'llamada';
+
     const minutosRecordatorio =
-      this.obtenerHorasRecordatorio() * 60;
+      esLlamada
+        ? 0 // Notificación en el momento del evento
+        : this.obtenerHorasRecordatorio() * 60;
 
     const titulo =
       this._crearTitulo(datos);
@@ -162,11 +180,11 @@ const CalendarTrabajo = {
     /*
      * Agregamos nuestro único recordatorio.
      *
-     * Actualmente:
-     * 24 horas antes.
+     * Para llamadas: 0 minutos (notificación en el momento del evento)
+     * Para seguimiento: configurable en CONFIGURACION (por defecto 24h)
      */
     if (
-      minutosRecordatorio > 0
+      minutosRecordatorio >= 0
     ) {
 
       evento.addEmailReminder(
