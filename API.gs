@@ -166,3 +166,46 @@ function apiActualizarVenta(datos) {
     datos
   );
 }
+
+
+/**
+ * POSTITS (NOTAS)
+ */
+
+function apiObtenerPostits(offset, limit) {
+  try {
+    return Postit.obtenerActivos(offset, limit);
+  } catch (e) {
+    Logger.log('ERROR en apiObtenerPostits: ' + e.message);
+    Logger.log('Stack: ' + e.stack);
+    return { error: true, message: e.message, stack: e.stack };
+  }
+}
+
+function apiBuscarPostits(termino) {
+  return Postit.buscar(termino);
+}
+
+function apiObtenerPostit(idPostit) {
+  return Postit.obtenerPorId(idPostit);
+}
+
+function apiCrearPostit(datos) {
+  return Postit.crear(datos);
+}
+
+function apiActualizarPostit(datos) {
+  return Postit.actualizar(datos);
+}
+
+function apiArchivarPostit(idPostit) {
+  return Postit.archivar(idPostit);
+}
+
+function apiDesarchivarPostit(idPostit) {
+  return Postit.desarchivar(idPostit);
+}
+
+function apiEliminarPostit(idPostit) {
+  return Postit.eliminar(idPostit);
+}

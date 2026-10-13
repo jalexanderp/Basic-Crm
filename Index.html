@@ -63,6 +63,15 @@
           Ventas
         </button>
 
+        <button
+          type="button"
+          id="nav-notas"
+          class="nav-tab"
+          onclick="AppUI.irANotas()"
+        >
+          Notas
+        </button>
+
       </nav>
 
     </header>
@@ -234,6 +243,17 @@
 
 
       <!-- ======================================================
+           VISTA: NOTAS (POSTITS)
+           ====================================================== -->
+
+      <section
+        id="vista-notas"
+        hidden
+      >
+      </section>
+
+
+      <!-- ======================================================
            VISTA: NUEVA VENTA
            ====================================================== -->
 
@@ -271,6 +291,8 @@
   <?!= include('VentaFormularioUI'); ?>
 
   <?!= include('VentaHistorialUI'); ?>
+
+  <?!= include('PostitListaUI'); ?>
 
   <?!= include('AppUI'); ?>
 
