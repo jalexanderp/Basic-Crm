@@ -1,0 +1,318 @@
+<!--
+  ARCHIVO: PostitListaUI.html
+
+  Módulo frontend para la lista de Notas (Postits).
+-->
+
+<script>
+
+  const PostitListaUI = {
+
+    notas: [],
+    paginaActual: 1,
+    notasPorPagina: 5,
+    filtroTexto: '',
+
+    /**
+     * Inicializa el módulo.
+     */
+    init() {
+      this.cargar();
+    },
+
+    /**
+     * Carga las notas desde el backend.
+     */
+    cargar() {
+      google.script.run
+        .withSuccessHandler((response) => {
+          if (response.success) {
+            this.notas = response.notas || [];
+            this.paginaActual = 1;
+            this.renderizar();
+          } else {
+            this.renderizarError(response.error);
+          }
+        })
+        .withFailureHandler((error) => {
+          this.renderizarError('Error al cargar las notas: ' + error);
+        })
+        .apiObtenerNotas();
+    },
+
+    /**
+     * Renderiza la lista de notas.
+     */
+    renderizar() {
+      const contenedor = document.getElementById('lista-notas');
+      
+      if (!contenedor) {
+        return;
+      }
+
+      // Aplicar filtro
+      let notasFiltradas = this.notas;
+      if (this.filtroTexto) {
+        const texto = this.filtroTexto.toLowerCase();
+        notasFiltradas = this.notas.filter((nota) =>
+          nota.descripcion.toLowerCase().includes(texto)
+        );
+      }
+
+      // Paginación
+      const indiceInicio = (this.paginaActual - 1) * this.notasPorPagina;
+      const indiceFin = indiceInicio + this.notasPorPagina;
+      const notasPagina = notasFiltradas.slice(indiceInicio, indiceFin);
+
+      if (notasFiltradas.length === 0) {
+        contenedor.innerHTML = '<div class="no-data">No hay notas. ¡Crea una nueva!</div>';
+        return;
+      }
+
+      let html = '';
+      
+      notasPagina.forEach((nota) => {
+        const fecha = new Date(nota.fecha);
+        const fechaFormateada = fecha.toLocaleDateString('es-ES', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        html += `
+          <div class="postit-card" data-id="${nota.idPostit}">
+            <div class="postit-header">
+              <span class="postit-id">${nota.idPostit}</span>
+              <div class="postit-actions">
+                <button
+                  type="button"
+                  class="btn btn-small btn-editar"
+                  onclick="PostitListaUI.editar('${nota.idPostit}')"
+                >
+                  Editar
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-small btn-archivar"
+                  onclick="PostitListaUI.archivar('${nota.idPostit}')"
+                >
+                  Archivar
+                </button>
+              </div>
+            </div>
+            <div class="postit-body">
+              <p class="postit-description">${this.escapeHtml(nota.descripcion)}</p>
+            </div>
+            <div class="postit-footer">
+              <span class="postit-date">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                  <path d="M6 2c-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/>
+                  <path d="M6 3c-.6 0-1 .4-1 1v3c0 .6.4 1 1 1s1-.4 1-1V4c0-.6-.4-1-1-1z"/>
+                </svg>
+                ${fechaFormateada}
+              </span>
+            </div>
+          </div>
+        `;
+      });
+
+      // Paginación
+      const totalPaginas = Math.ceil(notasFiltradas.length / this.notasPorPagina);
+      
+      if (totalPaginas > 1) {
+        html += '<div class="paginacion">';
+        
+        if (this.paginaActual > 1) {
+          html += `<button type="button" class="btn btn-small" onclick="PostitListaUI.paginar(${this.paginaActual - 1})">Anterior</button>`;
+        }
+        
+        html += `<span>Página ${this.paginaActual} de ${totalPaginas}</span>`;
+        
+        if (this.paginaActual < totalPaginas) {
+          html += `<button type="button" class="btn btn-small" onclick="PostitListaUI.paginar(${this.paginaActual + 1})">Siguiente</button>`;
+        }
+        
+        html += '</div>';
+      }
+
+      contenedor.innerHTML = html;
+    },
+
+    /**
+     * Renderiza un mensaje de error.
+     * @param {string} mensaje - Mensaje de error.
+     */
+    renderizarError(mensaje) {
+      const contenedor = document.getElementById('lista-notas');
+      if (contenedor) {
+        contenedor.innerHTML = `<div class="no-data" style="color: red;">${this.escapeHtml(mensaje)}</div>`;
+      }
+    },
+
+    /**
+     * Filtra las notas por texto.
+     */
+    filtrar() {
+      const input = document.getElementById('buscar-notas');
+      if (input) {
+        this.filtroTexto = input.value.trim();
+        this.paginaActual = 1;
+        this.renderizar();
+      }
+    },
+
+    /**
+     * Navega a una página específica.
+     * @param {number} pagina - Número de página.
+     */
+    paginar(pagina) {
+      this.paginaActual = pagina;
+      this.renderizar();
+    },
+
+    /**
+     * Abre el formulario para crear una nueva nota.
+     */
+    nueva() {
+      const formulario = document.getElementById('formulario-nota');
+      if (formulario) {
+        formulario.style.display = 'block';
+        document.getElementById('descripcion').value = '';
+        document.getElementById('descripcion').focus();
+      }
+    },
+
+    /**
+     * Cierra el formulario.
+     */
+    cerrarFormulario() {
+      const formulario = document.getElementById('formulario-nota');
+      if (formulario) {
+        formulario.style.display = 'none';
+      }
+    },
+
+    /**
+     * Abre el formulario para editar una nota.
+     * @param {string} idPostit - ID de la nota.
+     */
+    editar(idPostit) {
+      const nota = this.notas.find((n) => n.idPostit === idPostit);
+      if (!nota) {
+        return;
+      }
+
+      const formulario = document.getElementById('formulario-editar-nota');
+      if (formulario) {
+        formulario.style.display = 'block';
+        document.getElementById('editar-descripcion').value = nota.descripcion;
+        document.getElementById('editar-id').value = idPostit;
+        document.getElementById('editar-descripcion').focus();
+      }
+    },
+
+    /**
+     * Cierra el formulario de edición.
+     */
+    cerrarFormularioEditar() {
+      const formulario = document.getElementById('formulario-editar-nota');
+      if (formulario) {
+        formulario.style.display = 'none';
+      }
+    },
+
+    /**
+     * Guarda una nueva nota.
+     */
+    guardarNota() {
+      const descripcion = document.getElementById('descripcion').value.trim();
+      
+      if (!descripcion) {
+        alert('Por favor, ingresa una descripción para la nota.');
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler((response) => {
+          if (response.success) {
+            alert(response.mensaje);
+            this.cerrarFormulario();
+            this.cargar();
+          } else {
+            alert('Error: ' + response.error);
+          }
+        })
+        .withFailureHandler((error) => {
+          alert('Error: ' + error);
+        })
+        .apiCrearNota({ descripcion: descripcion });
+    },
+
+    /**
+     * Actualiza una nota.
+     */
+    actualizarNota() {
+      const id = document.getElementById('editar-id').value;
+      const descripcion = document.getElementById('editar-descripcion').value.trim();
+
+      if (!descripcion) {
+        alert('Por favor, ingresa una descripción para la nota.');
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler((response) => {
+          if (response.success) {
+            alert(response.mensaje);
+            this.cerrarFormularioEditar();
+            this.cargar();
+          } else {
+            alert('Error: ' + response.error);
+          }
+        })
+        .withFailureHandler((error) => {
+          alert('Error: ' + error);
+        })
+        .apiActualizarNota({ idPostit: id, descripcion: descripcion });
+    },
+
+    /**
+     * Archiva una nota.
+     * @param {string} idPostit - ID de la nota.
+     */
+    archivar(idPostit) {
+      if (!confirm('¿Estás seguro de que quieres archivar esta nota?')) {
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler((response) => {
+          if (response.success) {
+            alert(response.mensaje);
+            this.cargar();
+          } else {
+            alert('Error: ' + response.error);
+          }
+        })
+        .withFailureHandler((error) => {
+          alert('Error: ' + error);
+        })
+        .apiArchivarNota({ idPostit: idPostit });
+    },
+
+    /**
+     * Escapa caracteres HTML para prevenir XSS.
+     * @param {string} texto - Texto a escapar.
+     * @returns {string} Texto escapado.
+     */
+    escapeHtml(texto) {
+      const div = document.createElement('div');
+      div.textContent = texto;
+      return div.innerHTML;
+    }
+
+  };
+
+</script>

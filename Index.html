@@ -33,6 +33,8 @@
 
   <?!= include('CSS'); ?>
 
+  <?!= include('PostitListaUI'); ?>
+
 </head>
 
 <body>
@@ -61,6 +63,15 @@
           onclick="AppUI.irAVentas()"
         >
           Ventas
+        </button>
+
+        <button
+          type="button"
+          id="nav-notas"
+          class="nav-tab"
+          onclick="AppUI.irANotas()"
+        >
+          Notas
         </button>
 
       </nav>
@@ -226,6 +237,64 @@
 
           <div class="loading">
             Cargando ventas...
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- ======================================================
+           VISTA: NOTAS (POSTITS)
+           ====================================================== -->
+
+      <section
+        id="vista-notas"
+        hidden
+      >
+
+        <div
+          class="vista-notas"
+        >
+
+          <div
+            class="vista-header"
+          >
+
+            <h2>Notas</h2>
+
+            <div
+              class="vista-controles"
+            >
+
+              <button
+                type="button"
+                class="btn btn-primary"
+                onclick="PostitListaUI.nueva()"
+              >
+                Nueva Nota
+              </button>
+
+              <div
+                class="campo-busqueda"
+              >
+                <input
+                  type="text"
+                  id="buscar-notas"
+                  placeholder="🔍 Buscar notas..."
+                  oninput="PostitListaUI.filtrar()"
+                />
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <div
+            id="lista-notas"
+            class="lista-notas"
+          >
           </div>
 
         </div>

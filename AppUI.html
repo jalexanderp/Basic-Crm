@@ -58,9 +58,22 @@
 
 
     /**
+     * Muestra la sección de Notas (Postits) y marca su pestaña.
+     */
+    irANotas() {
+
+      this._activarTab('notas');
+
+      NavegacionUI.mostrar('notas');
+
+      PostitListaUI.cargar();
+    },
+
+
+    /**
      * Resalta la pestaña activa en el header.
      *
-     * @param {string} seccion 'clientes' | 'ventas'
+     * @param {string} seccion 'clientes' | 'ventas' | 'notas'
      */
     _activarTab(seccion) {
 
@@ -69,6 +82,9 @@
 
       const tabVentas =
         document.getElementById('nav-ventas');
+
+      const tabNotas =
+        document.getElementById('nav-notas');
 
       if (tabClientes) {
         tabClientes.classList.toggle(
@@ -81,6 +97,13 @@
         tabVentas.classList.toggle(
           'nav-tab-activo',
           seccion === 'ventas'
+        );
+      }
+
+      if (tabNotas) {
+        tabNotas.classList.toggle(
+          'nav-tab-activo',
+          seccion === 'notas'
         );
       }
     }

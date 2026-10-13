@@ -448,4 +448,133 @@
     color: #667085;
   }
 
+
+  /* ============================================================
+     VISTA: NOTAS (POSTITS)
+     ============================================================ */
+
+  .vista-notas {
+    padding: 24px;
+  }
+
+  .vista-notas .vista-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+
+  .vista-notas .vista-header h2 {
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .vista-notas .vista-controles {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .vista-notas .campo-busqueda input {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    width: 280px;
+    transition: border-color 0.2s;
+  }
+
+  .vista-notas .campo-busqueda input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  }
+
+  .vista-notas .lista-notas {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+
+  .vista-notas .postit-card {
+    background: linear-gradient(135deg, #fff9e6, #fff3cc);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid #ffe0b2;
+  }
+
+  .vista-notas .postit-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  }
+
+  .vista-notas .postit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+
+  .vista-notas .postit-id {
+    font-size: 12px;
+    color: #999;
+    font-weight: 500;
+  }
+
+  .vista-notas .postit-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .vista-notas .postit-body {
+    margin-bottom: 12px;
+  }
+
+  .vista-notas .postit-description {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #333;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  .vista-notas .postit-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #888;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  .vista-notas .postit-date {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .vista-notas .no-data {
+    text-align: center;
+    padding: 48px 24px;
+    color: #888;
+    font-size: 16px;
+  }
+
+  .vista-notas .paginacion {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin-top: 24px;
+  }
+
+  .vista-notas .paginacion span {
+    font-size: 14px;
+    color: #667;
+  }
+
 </style>
