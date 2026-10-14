@@ -579,6 +579,76 @@
 
 
   /* ============================================================
+     BARRA DE HERRAMIENTAS DE TEXTO
+     ============================================================ */
+
+  .toolbar {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+    padding: 8px;
+    background: #f5f5f5;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+  }
+
+  .toolbar button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .toolbar button:hover {
+    background: #e3f2fd;
+    border-color: #2196f3;
+  }
+
+  .toolbar select {
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .emoji-bar {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  .emoji-bar button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    font-size: 20px;
+    transition: all 0.2s;
+  }
+
+  .emoji-bar button:hover {
+    background: #fff3e0;
+    border-color: #ff9800;
+    transform: scale(1.1);
+  }
+
+
+  /* ============================================================
      MODAL (formulario)
      ============================================================ */
 

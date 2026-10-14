@@ -309,3 +309,85 @@ function apiEliminarNota(params) {
     };
   }
 }
+
+/**
+ * Guarda una nota (crear o actualizar).
+ * 
+ * @param {Object} datos - Datos de la nota.
+ * @param {string} [datos.idPostit] - ID de la nota (si existe, se actualiza).
+ * @param {string} datos.descripcion - Descripción de la nota.
+ * @param {string} [datos.idCliente] - ID del cliente (opcional).
+ * @returns {Object} Resultado de la operación.
+ */
+function apiGuardarNota(datos) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('POSTITS');
+    
+    if (!sheet) {
+      sheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet('POSTITS');
+      sheet.appendRow(['ID_Postit', 'ID_Cliente', 'Fecha', 'Descripción', 'Archivado']);
+    }
+    
+    // Si hay ID_Postit, actualizar; si no, crear
+    if (datos.idPostit) {
+      // Actualizar nota existente
+      const data = sheet.getDataRange().getValues();
+      
+      for (let i = 1; i < data.length; i++) {
+        if (data[i][0] === datos.idPostit) {
+          // Actualizar descripción (columna D, índice 3)
+          // Actualizar ID_Cliente (columna B, índice 1)
+          // Actualizar fecha (columna C, índice 2)
+          sheet.getRange(i + 1, 2).setValue(datos.idCliente || '');
+          sheet.getRange(i + 1, 3).setValue(new Date());
+          sheet.getRange(i + 1, 4).setValue(datos.descripcion);
+          
+          return {
+            success: true,
+            mensaje: 'Nota actualizada correctamente'
+          };
+        }
+      }
+      
+      return {
+        success: false,
+        error: 'Nota no encontrada'
+      };
+    } else {
+      // Crear nueva nota
+      // Generar ID único
+      const allNotas = apiObtenerTodasLasNotas();
+      let nextId = 1;
+      
+      if (allNotas.success && allNotas.notas.length > 0) {
+        const lastId = allNotas.notas[allNotas.notas.length - 1].idPostit;
+        const parts = lastId.split('-');
+        nextId = parseInt(parts[2]) + 1;
+      }
+      
+      const idPostit = 'POST-' + new Date().getFullYear() + '-' + String(nextId).padStart(4, '0');
+      
+      // Agregar nueva nota
+      sheet.appendRow([
+        idPostit,
+        datos.idCliente || '',
+        new Date(),
+        datos.descripcion,
+        false
+      ]);
+      
+      return {
+        success: true,
+        idPostit: idPostit,
+        mensaje: 'Nota creada correctamente'
+      };
+    }
+    
+  } catch (e) {
+    Logger.log('Error en apiGuardarNota: ' + e.toString());
+    return {
+      success: false,
+      error: e.toString()
+    };
+  }
+}

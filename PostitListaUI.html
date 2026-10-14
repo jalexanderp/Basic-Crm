@@ -2,6 +2,19 @@
   ARCHIVO: PostitListaUI.html
 
   Módulo frontend para la lista de Notas (Postits).
+
+  Responsabilidad:
+  - Cargar notas desde el backend.
+  - Mostrar notas (solo las activas, no archivadas).
+  - Filtrar por texto.
+  - Paginación de 5 notas por página.
+  - Abrir formulario para crear/editar.
+  - Archivar notas.
+
+  No debe contener:
+  - acceso directo a Google Sheets.
+  - lógica de negocio.
+  - lógica de creación/edición.
 -->
 
 <script>
@@ -45,7 +58,7 @@
      */
     renderizar() {
       const contenedor = document.getElementById('lista-notas');
-      
+
       if (!contenedor) {
         return;
       }
@@ -70,7 +83,7 @@
       }
 
       let html = '';
-      
+
       notasPagina.forEach((nota) => {
         const fecha = new Date(nota.fecha);
         const fechaFormateada = fecha.toLocaleDateString('es-ES', {
@@ -103,7 +116,7 @@
               </div>
             </div>
             <div class="postit-body">
-              <p class="postit-description">${this.escapeHtml(nota.descripcion)}</p>
+              <p class="postit-description">${this._renderizarMarkdown(nota.descripcion)}</p>
             </div>
             <div class="postit-footer">
               <span class="postit-date">
@@ -120,20 +133,20 @@
 
       // Paginación
       const totalPaginas = Math.ceil(notasFiltradas.length / this.notasPorPagina);
-      
+
       if (totalPaginas > 1) {
         html += '<div class="paginacion">';
-        
+
         if (this.paginaActual > 1) {
           html += `<button type="button" class="btn btn-small" onclick="PostitListaUI.paginar(${this.paginaActual - 1})">Anterior</button>`;
         }
-        
+
         html += `<span>Página ${this.paginaActual} de ${totalPaginas}</span>`;
-        
+
         if (this.paginaActual < totalPaginas) {
           html += `<button type="button" class="btn btn-small" onclick="PostitListaUI.paginar(${this.paginaActual + 1})">Siguiente</button>`;
         }
-        
+
         html += '</div>';
       }
 
@@ -176,22 +189,7 @@
      * Abre el formulario para crear una nueva nota.
      */
     nueva() {
-      const formulario = document.getElementById('formulario-nota');
-      if (formulario) {
-        formulario.style.display = 'block';
-        document.getElementById('descripcion').value = '';
-        document.getElementById('descripcion').focus();
-      }
-    },
-
-    /**
-     * Cierra el formulario.
-     */
-    cerrarFormulario() {
-      const formulario = document.getElementById('formulario-nota');
-      if (formulario) {
-        formulario.style.display = 'none';
-      }
+      PostitFormularioUI.mostrar();
     },
 
     /**
@@ -203,79 +201,7 @@
       if (!nota) {
         return;
       }
-
-      const formulario = document.getElementById('formulario-editar-nota');
-      if (formulario) {
-        formulario.style.display = 'block';
-        document.getElementById('editar-descripcion').value = nota.descripcion;
-        document.getElementById('editar-id').value = idPostit;
-        document.getElementById('editar-descripcion').focus();
-      }
-    },
-
-    /**
-     * Cierra el formulario de edición.
-     */
-    cerrarFormularioEditar() {
-      const formulario = document.getElementById('formulario-editar-nota');
-      if (formulario) {
-        formulario.style.display = 'none';
-      }
-    },
-
-    /**
-     * Guarda una nueva nota.
-     */
-    guardarNota() {
-      const descripcion = document.getElementById('descripcion').value.trim();
-      
-      if (!descripcion) {
-        alert('Por favor, ingresa una descripción para la nota.');
-        return;
-      }
-
-      google.script.run
-        .withSuccessHandler((response) => {
-          if (response.success) {
-            alert(response.mensaje);
-            this.cerrarFormulario();
-            this.cargar();
-          } else {
-            alert('Error: ' + response.error);
-          }
-        })
-        .withFailureHandler((error) => {
-          alert('Error: ' + error);
-        })
-        .apiCrearNota({ descripcion: descripcion });
-    },
-
-    /**
-     * Actualiza una nota.
-     */
-    actualizarNota() {
-      const id = document.getElementById('editar-id').value;
-      const descripcion = document.getElementById('editar-descripcion').value.trim();
-
-      if (!descripcion) {
-        alert('Por favor, ingresa una descripción para la nota.');
-        return;
-      }
-
-      google.script.run
-        .withSuccessHandler((response) => {
-          if (response.success) {
-            alert(response.mensaje);
-            this.cerrarFormularioEditar();
-            this.cargar();
-          } else {
-            alert('Error: ' + response.error);
-          }
-        })
-        .withFailureHandler((error) => {
-          alert('Error: ' + error);
-        })
-        .apiActualizarNota({ idPostit: id, descripcion: descripcion });
+      PostitFormularioUI.editar(nota);
     },
 
     /**
@@ -311,6 +237,29 @@
       const div = document.createElement('div');
       div.textContent = texto;
       return div.innerHTML;
+    },
+
+    /**
+     * Renderiza texto con soporte básico de Markdown.
+     * @param {string} texto - Texto con Markdown.
+     * @returns {string} Texto HTML renderizado.
+     */
+    _renderizarMarkdown(texto) {
+      if (!texto) return '';
+
+      // Escapar HTML primero
+      texto = this.escapeHtml(texto);
+
+      // Convertir Markdown básico a HTML
+      texto = texto
+        // Negrita: **texto**
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        // Cursiva: _texto_
+        .replace(/_(.*?)_/g, '<em>$1</em>')
+        // Subrayado: __texto__
+        .replace(/__(.*?)__/g, '<u>$1</u>');
+
+      return texto;
     }
 
   };

@@ -1,0 +1,373 @@
+<!--
+  ARCHIVO: PostitFormularioUI.html
+
+  Formulario de notas (Postits).
+
+  Responsabilidad:
+  - Mostrar el formulario de creación y edición.
+  - Limpiar los campos.
+  - Cargar datos de un postit existente.
+  - Validar los campos obligatorios en frontend.
+  - Evitar doble envío.
+  - Enviar los datos al backend.
+  - Gestionar creación y actualización.
+  - Editor de texto con Markdown básico.
+
+  No debe contener:
+  - acceso directo a Google Sheets.
+  - lógica de negocio.
+  - generación de IDs.
+  - lógica de eventos.
+  - sistema de navegación.
+  - CSS global.
+-->
+
+<script>
+
+  const PostitFormularioUI = {
+
+    guardando: false,
+
+    modo: 'crear',
+
+    postitEditando: null,
+
+    /**
+     * Muestra el formulario para crear una nueva nota.
+     */
+    mostrar() {
+
+      const vista = NavegacionUI.obtenerElemento('nuevoPostit');
+
+      if (!vista) {
+        return;
+      }
+
+      this.guardando = false;
+      this.modo = 'crear';
+      this.postitEditando = null;
+
+      vista.innerHTML = this._crearFormulario();
+
+      NavegacionUI.mostrar('nuevoPostit');
+    },
+
+    /**
+     * Muestra el formulario para editar una nota existente.
+     * @param {Object} postit - Objeto de nota a editar.
+     */
+    editar(postit) {
+
+      if (!postit || !postit.idPostit) {
+        return;
+      }
+
+      const vista = NavegacionUI.obtenerElemento('nuevoPostit');
+
+      if (!vista) {
+        return;
+      }
+
+      this.guardando = false;
+      this.modo = 'editar';
+      this.postitEditando = postit;
+
+      vista.innerHTML = this._crearFormulario();
+
+      NavegacionUI.mostrar('nuevoPostit');
+
+      this._cargarDatosPostit(postit);
+    },
+
+    /**
+     * Cancela la operación y vuelve a la lista.
+     */
+    cancelar() {
+      PostitListaUI.cargar();
+    },
+
+    /**
+     * Crea el HTML del formulario.
+     * @returns {string} HTML del formulario.
+     */
+    _crearFormulario() {
+
+      const esEdicion = this.modo === 'editar';
+
+      const titulo = esEdicion ? 'Editar nota' : 'Nueva nota';
+
+      return `
+        <div class="card">
+
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              gap: 12px;
+              margin-bottom: 20px;
+            "
+          >
+
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="PostitFormularioUI.cancelar()"
+            >
+              ← Volver
+            </button>
+
+            <h2 style="margin: 0;">${titulo}</h2>
+
+          </div>
+
+          <form id="formulario-postit" onsubmit="return false;">
+
+            <div class="form-group">
+
+              <label class="form-label" for="postit-cliente">
+                Cliente (opcional)
+              </label>
+
+              <input
+                type="text"
+                id="postit-cliente"
+                placeholder="Buscar cliente..."
+                list="lista-clientes"
+              />
+
+              <datalist id="lista-clientes">
+                <option value="ID001 - Cliente Ejemplo 1">
+                <option value="ID002 - Cliente Ejemplo 2">
+                <option value="ID003 - Cliente Ejemplo 3">
+              </datalist>
+
+              <input type="hidden" id="postit-cliente-id" />
+
+            </div>
+
+            <div class="form-group">
+
+              <label class="form-label" for="postit-descripcion">
+                Descripción
+                <span class="form-required">*</span>
+              </label>
+
+              <!-- Barra de herramientas de formato -->
+              <div class="toolbar" id="toolbar-postit">
+                <button type="button" onclick="PostitFormularioUI._aplicarFormato('negrita')" title="Negrita">
+                  <strong>B</strong>
+                </button>
+                <button type="button" onclick="PostitFormularioUI._aplicarFormato('cursiva')" title="Cursiva">
+                  <em>I</em>
+                </button>
+                <button type="button" onclick="PostitFormularioUI._aplicarFormato('subrayado')" title="Subrayado">
+                  <u>S</u>
+                </button>
+                <select onchange="PostitFormularioUI._aplicarFormato('color', this.value)" title="Color de texto">
+                  <option value="">Color</option>
+                  <option value="#000000">Negro</option>
+                  <option value="#c62828">Rojo</option>
+                  <option value="#1e7e34">Verde</option>
+                  <option value="#1976d2">Azul</option>
+                  <option value="#f57c00">Naranja</option>
+                  <option value="#7b1fa2">Morado</option>
+                </select>
+                <select onchange="PostitFormularioUI._aplicarFormato('tamano', this.value)" title="Tamaño de texto">
+                  <option value="">Tamaño</option>
+                  <option value="12px">Pequeño</option>
+                  <option value="14px">Normal</option>
+                  <option value="16px">Grande</option>
+                  <option value="18px">Muy grande</option>
+                </select>
+              </div>
+
+              <!-- Emoticones -->
+              <div class="emoji-bar" id="emoji-bar-postit">
+                <button type="button" onclick="PostitFormularioUI._insertarEmoji('😀')" title="Sonrisa">😀</button>
+                <button type="button" onclick="PostitFormularioUI._insertarEmoji('👍')" title="Me gusta">👍</button>
+                <button type="button" onclick="PostitFormularioUI._insertarEmoji('❤️')" title="Corazón">❤️</button>
+                <button type="button" onclick="PostitFormularioUI._insertarEmoji('⭐')" title="Estrella">⭐</button>
+                <button type="button" onclick="PostitFormularioUI._insertarEmoji('📌')" title="Pin">📌</button>
+                <button type="button" onclick="PostitFormularioUI._insertarEmoji('📝')" title="Nota">📝</button>
+                <button type="button" onclick="PostitFormularioUI._insertarEmoji('✅')" title="Check">✅</button>
+                <button type="button" onclick="PostitFormularioUI._insertarEmoji('⚠️')" title="Alerta">⚠️</button>
+                <button type="button" onclick="PostitFormularioUI._insertarEmoji('💡')" title="Idea">💡</button>
+                <button type="button" onclick="PostitFormularioUI._insertarEmoji('🎯')" title="Objetivo">🎯</button>
+              </div>
+
+              <textarea
+                id="postit-descripcion"
+                rows="12"
+                placeholder="Escribe tu nota aquí... Puedes usar Markdown básico."
+                style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; resize: vertical; font-family: monospace;"
+              ></textarea>
+
+              <div id="error-descripcion" class="field-error" hidden></div>
+
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+
+              <button
+                type="button"
+                class="btn btn-secondary"
+                onclick="PostitFormularioUI.cancelar()"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                class="btn btn-primary"
+                onclick="PostitFormularioUI.guardar()"
+              >
+                ${esEdicion ? 'Guardar cambios' : 'Guardar nota'}
+              </button>
+
+            </div>
+
+          </form>
+
+        </div>
+      `;
+    },
+
+    /**
+     * Carga los datos de un postit existente en el formulario.
+     * @param {Object} postit - Objeto de nota.
+     */
+    _cargarDatosPostit(postit) {
+
+      const clienteId = postit.idCliente || '';
+      const descripcion = postit.descripcion || '';
+
+      document.getElementById('postit-cliente-id').value = clienteId;
+      document.getElementById('postit-cliente').value = clienteId;
+
+      // Cargar descripción con formato
+      const textarea = document.getElementById('postit-descripcion');
+      if (textarea) {
+        textarea.value = descripcion;
+      }
+    },
+
+    /**
+     * Guarda la nota (crear o actualizar).
+     */
+    guardar() {
+
+      if (this.guardando) {
+        return;
+      }
+
+      const descripcion = document.getElementById('postit-descripcion').value.trim();
+      const clienteId = document.getElementById('postit-cliente-id').value.trim();
+
+      // Validación
+      const errorDescripcion = document.getElementById('error-descripcion');
+      errorDescripcion.textContent = '';
+      errorDescripcion.hidden = true;
+
+      if (!descripcion) {
+        errorDescripcion.textContent = 'La descripción es obligatoria.';
+        errorDescripcion.hidden = false;
+        return;
+      }
+
+      this.guardando = true;
+
+      const datos = {
+        descripcion: descripcion,
+        idCliente: clienteId || null
+      };
+
+      if (this.modo === 'editar') {
+        datos.idPostit = this.postitEditando.idPostit;
+      }
+
+      google.script.run
+        .withSuccessHandler((response) => {
+          this.guardando = false;
+
+          if (response.success) {
+            alert(response.mensaje || 'Guardado correctamente.');
+            this.cancelar();
+          } else {
+            alert('Error: ' + (response.error || 'Error desconocido'));
+            this.guardando = false;
+          }
+        })
+        .withFailureHandler((error) => {
+          this.guardando = false;
+          alert('Error: ' + error);
+        })
+        .apiGuardarNota(datos);
+    },
+
+    /**
+     * Aplica formato al texto seleccionado.
+     * @param {string} tipo - Tipo de formato ('negrita', 'cursiva', 'subrayado', 'color', 'tamano').
+     * @param {string} valor - Valor del formato (color o tamaño).
+     */
+    _aplicarFormato(tipo, valor = '') {
+
+      const textarea = document.getElementById('postit-descripcion');
+      if (!textarea) {
+        return;
+      }
+
+      const inicio = textarea.selectionStart;
+      const fin = textarea.selectionEnd;
+      const texto = textarea.value;
+      const textoSeleccionado = texto.substring(inicio, fin);
+
+      let textoAgregado = '';
+
+      switch (tipo) {
+        case 'negrita':
+          textoAgregado = `**${textoSeleccionado}**`;
+          break;
+        case 'cursiva':
+          textoAgregado = `_${textoSeleccionado}_`;
+          break;
+        case 'subrayado':
+          textoAgregado = `__${textoSeleccionado}__`;
+          break;
+        case 'color':
+          textoAgregado = `<span style="color: ${valor};">${textoSeleccionado}</span>`;
+          break;
+        case 'tamano':
+          textoAgregado = `<span style="font-size: ${valor};">${textoSeleccionado}</span>`;
+          break;
+      }
+
+      if (textoAgregado) {
+        textarea.value = texto.substring(0, inicio) + textoAgregado + texto.substring(fin);
+        textarea.focus();
+        textarea.setSelectionRange(inicio + textoAgregado.length, inicio + textoAgregado.length);
+      }
+    },
+
+    /**
+     * Inserta un emoticon en el cursor.
+     * @param {string} emoji - Emoticono a insertar.
+     */
+    _insertarEmoji(emoji) {
+
+      const textarea = document.getElementById('postit-descripcion');
+      if (!textarea) {
+        return;
+      }
+
+      const inicio = textarea.selectionStart;
+      const fin = textarea.selectionEnd;
+      const texto = textarea.value;
+
+      textarea.value = texto.substring(0, inicio) + emoji + texto.substring(fin);
+      textarea.focus();
+      textarea.setSelectionRange(inicio + emoji.length, inicio + emoji.length);
+    }
+
+  };
+
+</script>
