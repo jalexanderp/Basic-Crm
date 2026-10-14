@@ -295,6 +295,50 @@
           >
           </div>
 
+          <!-- Formulario para crear nueva nota -->
+          <div
+            id="formulario-nota"
+            class="modal"
+            style="display: none;"
+          >
+            <div
+              class="modal-contenido"
+            >
+              <h3>Nueva Nota</h3>
+              
+              <div
+                class="campo-formulario"
+              >
+                <label for="descripcion">Descripción:</label>
+                <textarea
+                  id="descripcion"
+                  rows="5"
+                  placeholder="Escribe tu nota aquí..."
+                  style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; resize: vertical;"
+                ></textarea>
+              </div>
+
+              <div
+                class="modal-acciones"
+              >
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  onclick="PostitListaUI.guardarNota()"
+                >
+                  Guardar
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  onclick="PostitListaUI.cerrarFormulario()"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+
         </div>
 
       </section>
