@@ -899,19 +899,37 @@
 
       this._restaurarBoton();
 
+      console.log('=== ERROR RECIBIDO ===');
+      console.log('ERROR OBJETO:', error);
+      console.log('ERROR TIPO:', typeof error);
+      console.log('ERROR CONSTRUCTOR:', error?.constructor?.name);
+      console.log('ERROR MESSAGE:', error?.message);
+      console.log('ERROR JSON:', JSON.stringify(error));
+
       const mensaje =
         error && error.message
           ? error.message
           : 'No fue posible guardar el evento.';
 
+      console.log('MENSAJE EXTRAIDO:', mensaje);
+      console.log('BUSCANDO CONFLICTO_HORARIO:::', mensaje.indexOf('CONFLICTO_HORARIO::'));
+
       // Si es un conflicto de horario, mostramos un aviso con la opción
       // de crear el evento en paralelo (no un popup, sino un banner con
       // un botón que se muestra/oculta).
       if (mensaje.indexOf('CONFLICTO_HORARIO::') === 0) {
-        this._mostrarAvisoConflicto();
-        return;
+        console.log('DETECTADO CONFLICTO HORARIO - MOSTRANDO BANNER');
+
+        const aviso = document.getElementById('evento-aviso-conflicto');
+        console.log('BANNER ENCONTRADO:', aviso);
+
+        if (aviso) {
+          this._mostrarAvisoConflicto();
+          return;
+        }
       }
 
+      console.log('MOSTRANDO MENSAJE DE ERROR GENERAL');
       this._mostrarMensaje(
         mensaje,
         'error'
