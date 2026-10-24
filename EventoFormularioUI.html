@@ -917,7 +917,11 @@
       // Si es un conflicto de horario, mostramos un aviso con la opción
       // de crear el evento en paralelo (no un popup, sino un banner con
       // un botón que se muestra/oculta).
-      if (mensaje.indexOf('CONFLICTO_HORARIO::') === 0) {
+      // Nota: El mensaje puede venir como "Error: CONFLICTO_HORARIO::..." o solo "CONFLICTO_HORARIO::..."
+      const esConflictoHorario = mensaje.indexOf('CONFLICTO_HORARIO::') !== -1;
+      console.log('ES CONFLICTO HORARIO:', esConflictoHorario);
+
+      if (esConflictoHorario) {
         console.log('DETECTADO CONFLICTO HORARIO - MOSTRANDO BANNER');
 
         const aviso = document.getElementById('evento-aviso-conflicto');
