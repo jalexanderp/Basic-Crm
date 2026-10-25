@@ -622,6 +622,10 @@
         boton.textContent = 'Guardando...';
       }
 
+      console.log('LLAMANDO A apiCrearEvento');
+      console.log('DATOS:', datos);
+      console.log('PERMITIR_CRUCE:', permitirCruce);
+
       google.script.run
         .withSuccessHandler(
           this._guardadoExitoso.bind(this)
