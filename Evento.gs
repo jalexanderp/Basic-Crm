@@ -196,6 +196,7 @@ const Evento = {
           }
         }
 
+        // NO lanzamos el error aquí, lo dejamos que sea capturado por el catch externo
         throw error;
 
       } finally {
@@ -208,6 +209,14 @@ const Evento = {
       console.log('=== ERROR CAPTURADO EN EVENTO.CREAR ===');
       console.log('Error:', error.message);
       console.log('Stack:', error.stack);
+
+      return {
+        error: true,
+        message: error.message,
+        stack: error.stack
+      };
+    }
+  },
 
       return {
         error: true,
