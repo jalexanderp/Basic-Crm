@@ -986,8 +986,12 @@
       `;
 
       console.log('BANNER ACTUALIZADO:', aviso.outerHTML);
+      
+      // Eliminar el atributo hidden y establecer hidden = false
+      aviso.removeAttribute('hidden');
       aviso.hidden = false;
       console.log('BANNER MOSTRANDO:', aviso.hidden);
+      console.log('BANNER FINAL:', aviso.outerHTML);
     },
 
 
