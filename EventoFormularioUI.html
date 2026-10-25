@@ -932,12 +932,17 @@
      */
     _mostrarAvisoConflicto() {
 
+      console.log('=== _mostrarAvisoConflicto EJECUTADO ===');
+      
       const aviso =
         document.getElementById(
           'evento-aviso-conflicto'
         );
 
+      console.log('BANNER ENCONTRADO:', !!aviso);
+
       if (!aviso) {
+        console.log('ERROR: BANNER NO ENCONTRADO');
         return;
       }
 
