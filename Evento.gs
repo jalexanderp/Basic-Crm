@@ -66,6 +66,10 @@ const Evento = {
 
     try {
 
+      console.log('=== EVENTO.CREAR INICIADO ===');
+      console.log('Datos recibidos:', JSON.stringify(datos));
+      console.log('Permitir cruce:', permitirCruce);
+
       this._validarDatos(datos);
 
       const lock =
@@ -175,6 +179,10 @@ const Evento = {
 
       } catch (error) {
 
+        console.log('=== ERROR EN BLOQUE INTERNO DE EVENTO.CREAR ===');
+        console.log('Error:', error.message);
+        console.log('Stack:', error.stack);
+
         // Si Calendar fue creado pero falló el guardado en Sheets,
         // intentamos revertirlo para no dejar compromisos huérfanos.
         if (idEventoCalendar) {
@@ -197,6 +205,10 @@ const Evento = {
     } catch (error) {
       // Captura todos los errores y los devuelve como objeto
       // para que google.script.run con withFailureHandler pueda manejarlos
+      console.log('=== ERROR CAPTURADO EN EVENTO.CREAR ===');
+      console.log('Error:', error.message);
+      console.log('Stack:', error.stack);
+
       return {
         error: true,
         message: error.message,
