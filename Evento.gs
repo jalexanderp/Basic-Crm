@@ -217,12 +217,6 @@ const Evento = {
       };
     }
   },
-
-      return {
-        error: true,
-        message: error.message,
-        stack: error.stack
-      };
     }
   },
 
