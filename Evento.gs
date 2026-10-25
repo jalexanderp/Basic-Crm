@@ -64,132 +64,144 @@ const Evento = {
    */
   crear(datos, permitirCruce) {
 
-    this._validarDatos(datos);
-
-    const lock =
-      LockService.getScriptLock();
-
-    lock.waitLock(10000);
-
-    let idEventoCalendar = '';
-
     try {
 
-      const hoja =
-        Spreadsheet.obtenerHoja(this.NOMBRE_HOJA);
+      this._validarDatos(datos);
 
-      const cliente =
-        Cliente.obtenerPorId(datos.idCliente);
+      const lock =
+        LockService.getScriptLock();
 
-      if (!cliente) {
-        throw new Error('El cliente indicado no existe.');
-      }
+      lock.waitLock(10000);
 
-      const idEvento =
-        this._generarNuevoId(hoja);
+      let idEventoCalendar = '';
 
-      const ahora = new Date();
+      try {
 
-      const seguimiento =
-        this._texto(datos.requiereSeguimiento);
+        const hoja =
+          Spreadsheet.obtenerHoja(this.NOMBRE_HOJA);
 
-      const fechaEvento =
-        seguimiento === 'Sí'
-          ? this._convertirFecha(datos.fechaEvento)
-          : '';
+        const cliente =
+          Cliente.obtenerPorId(datos.idCliente);
 
-      const horaEvento =
-        seguimiento === 'Sí'
-          ? this._formatearHora(datos.horaEvento)
-          : '';
+        if (!cliente) {
+          throw new Error('El cliente indicado no existe.');
+        }
 
-      // Duración: la del formulario o el valor por defecto (60).
-      const duracionMinutos =
-        this._duracionValida(datos.duracionMinutos, this.DURACION_DEFECTO);
+        const idEvento =
+          this._generarNuevoId(hoja);
 
-      let fechaNotificacion = '';
+        const ahora = new Date();
 
-      if (seguimiento === 'Sí') {
-        fechaNotificacion =
-          this._calcularFechaNotificacion(
-            fechaEvento,
-            datos.horaEvento
+        const seguimiento =
+          this._texto(datos.requiereSeguimiento);
+
+        const fechaEvento =
+          seguimiento === 'Sí'
+            ? this._convertirFecha(datos.fechaEvento)
+            : '';
+
+        const horaEvento =
+          seguimiento === 'Sí'
+            ? this._formatearHora(datos.horaEvento)
+            : '';
+
+        // Duración: la del formulario o el valor por defecto (60).
+        const duracionMinutos =
+          this._duracionValida(datos.duracionMinutos, this.DURACION_DEFECTO);
+
+        let fechaNotificacion = '';
+
+        if (seguimiento === 'Sí') {
+          fechaNotificacion =
+            this._calcularFechaNotificacion(
+              fechaEvento,
+              datos.horaEvento
+            );
+        }
+
+        const horaRegistro =
+          Utilities.formatDate(
+            ahora,
+            Session.getScriptTimeZone(),
+            'h:mm a'
           );
-      }
 
-      const horaRegistro =
-        Utilities.formatDate(
+        // CALENDAR: solo se crea una cita cuando requiere seguimiento.
+        if (seguimiento === 'Sí') {
+
+          const datosCalendar = {
+            idEvento: idEvento,
+            idCliente: cliente.idCliente,
+            nombreCliente: cliente.nombreCompleto,
+            tipoEvento: datos.tipoEvento,
+            comentario: datos.comentario,
+            resultadoEvento: datos.resultadoEvento,
+            motivoSeguimiento: datos.motivoSeguimiento,
+            fechaEvento: datos.fechaEvento,
+            horaEvento: datos.horaEvento,
+            duracionMinutos: duracionMinutos
+          };
+
+          const eventoCalendar =
+            CalendarTrabajo.crearEvento(
+              datosCalendar,
+              permitirCruce === true
+            );
+
+          idEventoCalendar = eventoCalendar.id;
+        }
+
+        const fila = [
+          idEvento,
+          cliente.idCliente,
           ahora,
-          Session.getScriptTimeZone(),
-          'h:mm a'
-        );
+          horaRegistro,
+          cliente.nombreCompleto,
+          this._texto(datos.tipoEvento),
+          this._texto(datos.comentario),
+          seguimiento,
+          fechaEvento,
+          horaEvento,
+          fechaNotificacion,
+          this._texto(datos.resultadoEvento),
+          seguimiento === 'Sí' ? this._texto(datos.motivoSeguimiento) : '',
+          idEventoCalendar,
+          duracionMinutos
+        ];
 
-      // CALENDAR: solo se crea una cita cuando requiere seguimiento.
-      if (seguimiento === 'Sí') {
+        hoja.appendRow(fila);
 
-        const datosCalendar = {
-          idEvento: idEvento,
-          idCliente: cliente.idCliente,
-          nombreCliente: cliente.nombreCompleto,
-          tipoEvento: datos.tipoEvento,
-          comentario: datos.comentario,
-          resultadoEvento: datos.resultadoEvento,
-          motivoSeguimiento: datos.motivoSeguimiento,
-          fechaEvento: datos.fechaEvento,
-          horaEvento: datos.horaEvento,
-          duracionMinutos: duracionMinutos
-        };
+        return this._formatearEvento(fila);
 
-        const eventoCalendar =
-          CalendarTrabajo.crearEvento(
-            datosCalendar,
-            permitirCruce === true
-          );
+      } catch (error) {
 
-        idEventoCalendar = eventoCalendar.id;
+        // Si Calendar fue creado pero falló el guardado en Sheets,
+        // intentamos revertirlo para no dejar compromisos huérfanos.
+        if (idEventoCalendar) {
+          try {
+            CalendarTrabajo.eliminarEvento(idEventoCalendar);
+          } catch (errorCalendar) {
+            console.error(
+              'No fue posible revertir el evento de Calendar: ' +
+              errorCalendar.message
+            );
+          }
+        }
+
+        throw error;
+
+      } finally {
+        lock.releaseLock();
       }
-
-      const fila = [
-        idEvento,
-        cliente.idCliente,
-        ahora,
-        horaRegistro,
-        cliente.nombreCompleto,
-        this._texto(datos.tipoEvento),
-        this._texto(datos.comentario),
-        seguimiento,
-        fechaEvento,
-        horaEvento,
-        fechaNotificacion,
-        this._texto(datos.resultadoEvento),
-        seguimiento === 'Sí' ? this._texto(datos.motivoSeguimiento) : '',
-        idEventoCalendar,
-        duracionMinutos
-      ];
-
-      hoja.appendRow(fila);
-
-      return this._formatearEvento(fila);
 
     } catch (error) {
-
-      // Si Calendar fue creado pero falló el guardado en Sheets,
-      // intentamos revertirlo para no dejar compromisos huérfanos.
-      if (idEventoCalendar) {
-        try {
-          CalendarTrabajo.eliminarEvento(idEventoCalendar);
-        } catch (errorCalendar) {
-          console.error(
-            'No fue posible revertir el evento de Calendar: ' +
-            errorCalendar.message
-          );
-        }
-      }
-
-      throw error;
-
-    } finally {
-      lock.releaseLock();
+      // Captura todos los errores y los devuelve como objeto
+      // para que google.script.run con withFailureHandler pueda manejarlos
+      return {
+        error: true,
+        message: error.message,
+        stack: error.stack
+      };
     }
   },
 
