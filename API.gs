@@ -84,10 +84,16 @@ function apiActualizarCliente(datos) {
 
 function apiCrearEvento(datos, permitirCruce) {
 
-  return Evento.crear(
-    datos,
-    permitirCruce
-  );
+  try {
+    return Evento.crear(
+      datos,
+      permitirCruce
+    );
+  } catch (error) {
+    Logger.log('ERROR en apiCrearEvento: ' + error.message);
+    Logger.log('Stack: ' + error.stack);
+    throw error;
+  }
 }
 
 
