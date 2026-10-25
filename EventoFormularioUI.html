@@ -622,13 +622,6 @@
         boton.textContent = 'Guardando...';
       }
 
-      // ALERTA PARA VERIFICAR QUE EL CÓDIGO SE EJECUTA
-      alert('LLAMANDO A apiCrearEvento - Verifica consola (F12)');
-
-      console.log('LLAMANDO A apiCrearEvento');
-      console.log('DATOS:', datos);
-      console.log('PERMITIR_CRUCE:', permitirCruce);
-
       google.script.run
         .withSuccessHandler(
           this._guardadoExitoso.bind(this)
@@ -906,33 +899,19 @@
 
       this._restaurarBoton();
 
-      console.log('=== ERROR RECIBIDO ===');
-      console.log('ERROR OBJETO:', error);
-      console.log('ERROR TIPO:', typeof error);
-      console.log('ERROR CONSTRUCTOR:', error?.constructor?.name);
-      console.log('ERROR MESSAGE:', error?.message);
-      console.log('ERROR JSON:', JSON.stringify(error));
-
       const mensaje =
         error && error.message
           ? error.message
           : 'No fue posible guardar el evento.';
-
-      console.log('MENSAJE EXTRAIDO:', mensaje);
-      console.log('BUSCANDO CONFLICTO_HORARIO:::', mensaje.indexOf('CONFLICTO_HORARIO::'));
 
       // Si es un conflicto de horario, mostramos un aviso con la opción
       // de crear el evento en paralelo (no un popup, sino un banner con
       // un botón que se muestra/oculta).
       // Nota: El mensaje puede venir como "Error: CONFLICTO_HORARIO::..." o solo "CONFLICTO_HORARIO::..."
       const esConflictoHorario = mensaje.indexOf('CONFLICTO_HORARIO::') !== -1;
-      console.log('ES CONFLICTO HORARIO:', esConflictoHorario);
 
       if (esConflictoHorario) {
-        console.log('DETECTADO CONFLICTO HORARIO - MOSTRANDO BANNER');
-
         const aviso = document.getElementById('evento-aviso-conflicto');
-        console.log('BANNER ENCONTRADO:', aviso);
 
         if (aviso) {
           this._mostrarAvisoConflicto();
@@ -940,7 +919,6 @@
         }
       }
 
-      console.log('MOSTRANDO MENSAJE DE ERROR GENERAL');
       this._mostrarMensaje(
         mensaje,
         'error'
@@ -954,23 +932,15 @@
      */
     _mostrarAvisoConflicto() {
 
-      console.log('=== MOSTRANDO AVISO DE CONFLICTO ===');
-      
       const aviso =
         document.getElementById(
           'evento-aviso-conflicto'
         );
 
-      console.log('BANNER ENCONTRADO:', aviso);
-      console.log('BANNER EXISTE:', !!aviso);
-
       if (!aviso) {
-        console.log('ERROR: BANNER NO ENCONTRADO');
         return;
       }
 
-      console.log('BANNER ACTUAL:', aviso.outerHTML);
-      
       aviso.className = 'mensaje mensaje-error';
       aviso.innerHTML = `
         <div style="margin-bottom:10px;">
@@ -985,13 +955,9 @@
         </button>
       `;
 
-      console.log('BANNER ACTUALIZADO:', aviso.outerHTML);
-      
       // Eliminar el atributo hidden y establecer hidden = false
       aviso.removeAttribute('hidden');
       aviso.hidden = false;
-      console.log('BANNER MOSTRANDO:', aviso.hidden);
-      console.log('BANNER FINAL:', aviso.outerHTML);
     },
 
 
