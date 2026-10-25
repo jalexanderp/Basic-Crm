@@ -908,10 +908,14 @@
       // de crear el evento en paralelo (no un popup, sino un banner con
       // un botón que se muestra/oculta).
       // Nota: El mensaje puede venir como "Error: CONFLICTO_HORARIO::..." o solo "CONFLICTO_HORARIO::..."
+      console.log('MENSAJE:', mensaje);
+      console.log('BUSCANDO CONFLICTO_HORARIO:::', mensaje.indexOf('CONFLICTO_HORARIO::'));
       const esConflictoHorario = mensaje.indexOf('CONFLICTO_HORARIO::') !== -1;
+      console.log('ES CONFLICTO HORARIO:', esConflictoHorario);
 
       if (esConflictoHorario) {
         const aviso = document.getElementById('evento-aviso-conflicto');
+        console.log('BANNER ENCONTRADO:', !!aviso);
 
         if (aviso) {
           this._mostrarAvisoConflicto();
