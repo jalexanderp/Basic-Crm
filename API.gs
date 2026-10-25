@@ -92,7 +92,11 @@ function apiCrearEvento(datos, permitirCruce) {
   } catch (error) {
     Logger.log('ERROR en apiCrearEvento: ' + error.message);
     Logger.log('Stack: ' + error.stack);
-    throw error;
+    return {
+      error: true,
+      message: error.message,
+      stack: error.stack
+    };
   }
 }
 
